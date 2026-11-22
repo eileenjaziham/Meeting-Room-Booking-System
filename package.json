@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server/local.js",
     "smoke": "node scripts/smoke.js",
+    "version:sync": "node scripts/sync-version.js",
     "test": "node --test --test-concurrency=1 tests/*.test.js",
     "check": "node scripts/check.js && node scripts/compile-mini.js",
     "db:init": "node --env-file-if-exists=.env scripts/db-init.js",

@@ -7,6 +7,10 @@
 | action | payload | 访问/结果 |
 |---|---|---|
 | me | 无 | 本人资料、isAdmin、本人身份审核历史、serverNow |
+| feedback.submit | category: usage/reservation/suggestion/other, content, requestId | 已登录用户；内容1—1000字，保存本人反馈，相同请求幂等，不接受客户端指定归属 |
+| feedback.mine | 无 | 当前会话本人反馈、处理状态与管理员回复，不返回其他人的记录 |
+| admin.feedback | status?: pending/replied | 授权负责人；反馈待办与已回复列表 |
+| admin.replyFeedback | id, reply | 授权负责人；1—1000字回复，记录处理人和时间；重复处理拒绝 |
 | identity.submit | name, studentNo, identityType, phone | 未提交/已拒绝账号，创建待核验资料；不提升权限 |
 | rooms.list | date | 已核验师生；五房间和脱敏 occupied |
 | rooms.detail | roomId, date | 已核验师生；指定房间资料和占用 |

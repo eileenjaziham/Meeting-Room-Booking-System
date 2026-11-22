@@ -1,0 +1,27 @@
+<mode-banner />
+<view class="page">
+  <view class="title">反馈中心</view>
+  <view class="muted intro">遇到问题或有改进建议，欢迎告诉我们</view>
+  <view class="tabs"><view class="tab {{tab === 'submit' ? 'selected' : ''}}" data-tab="submit" bindtap="tab">意见反馈</view><view class="tab {{tab === 'mine' ? 'selected' : ''}}" data-tab="mine" bindtap="tab">我的反馈</view></view>
+  <view wx:if="{{success}}" class="notice feedback-success">{{success}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}<view class="link" bindtap="load">重新加载</view></view>
+  <view wx:if="{{!user && !loading}}" class="card"><view class="muted login-hint">登录后可提交反馈并查看自己的记录</view><button class="primary" bindtap="login">进入登录</button></view>
+  <view wx:elif="{{user && tab === 'submit'}}" class="card">
+    <view class="label">反馈类型</view>
+    <view class="filters"><view wx:for="{{categories}}" wx:key="value" data-value="{{item.value}}" bindtap="category" class="chip {{category === item.value ? 'active' : ''}}">{{item.label}}</view></view>
+    <label class="field"><text class="label">反馈内容 *</text><textarea class="feedback-input" value="{{content}}" bindinput="content" maxlength="1000" placeholder="请描述遇到的问题、操作步骤或改进建议" disabled="{{busy}}" /></label>
+    <view class="counter">{{content.length}} / 1000</view>
+    <view class="muted privacy-note">请勿填写校园密码、验证码等敏感凭据。</view>
+    <button class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">提交反馈</button>
+  </view>
+  <block wx:elif="{{user && tab === 'mine'}}">
+    <view wx:if="{{loading}}" class="empty">正在读取反馈…</view>
+    <view wx:elif="{{!records.length && !error}}" class="empty">暂无反馈记录，欢迎提出你的建议</view>
+    <view wx:for="{{records}}" wx:key="id" class="card feedback-record">
+      <view class="row"><text class="subtitle">{{item.categoryText}}</text><text class="badge {{item.status === 'pending' ? 'pending' : 'approved'}}">{{item.statusText}}</text></view>
+      <view class="feedback-content">{{item.content}}</view><view class="muted small">{{item.createdText}} · 北京时间</view>
+      <view wx:if="{{item.reply}}" class="reply"><view class="reply-title">管理员回复</view><view class="feedback-content">{{item.reply}}</view><view class="muted small">{{item.repliedText}}</view></view>
+      <view wx:else class="muted pending-hint">反馈已收到，等待负责人处理</view>
+    </view>
+  </block>
+</view>

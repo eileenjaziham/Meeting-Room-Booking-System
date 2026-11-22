@@ -1,1 +1,11 @@
-<mode-banner /><view class="page"><view class="title admin-title">管理工作台</view><view class="muted">办公室负责人 · 全部五间会议室</view><view class="error" wx:if="{{error}}">{{error}}<view bindtap="load" class="link">重新加载</view></view><view wx:if="{{stats}}" class="stack"><view class="card" bindtap="pending"><view class="row"><text class="subtitle">学生预约审批</text><text class="badge pending">{{stats.reservations}} 项待办</text></view><view class="muted">批准或填写原因后拒绝</view></view><view class="card" bindtap="ledger"><view class="row"><text class="subtitle">预约台账</text><text class="badge">{{stats.total}} 条记录</text></view><view class="muted">按房间、日期、状态和申请人查询</view></view><view class="card" bindtap="identities"><view class="row"><text class="subtitle">用户身份审核</text><text class="badge pending">{{stats.identities}} 项待办</text></view><view class="muted">人工核验测试资料；管理员权限另行授权</view></view></view></view>
+<mode-banner />
+<view class="page">
+  <view class="title admin-title">管理工作台</view><view class="muted">办公室负责人 · 全部五间会议室</view>
+  <view class="error" wx:if="{{error}}">{{error}}<view bindtap="load" class="link">重新加载</view></view>
+  <view wx:if="{{stats}}" class="stack">
+    <view class="card" bindtap="pending"><view class="row"><text class="subtitle">学生预约审批</text><text class="badge pending">{{stats.reservations}} 项待办</text></view><view class="muted">批准或填写原因后拒绝</view></view>
+    <view class="card" bindtap="ledger"><view class="row"><text class="subtitle">预约台账</text><text class="badge">{{stats.total}} 条记录</text></view><view class="muted">按房间、日期、状态和申请人查询</view></view>
+    <view class="card" bindtap="identities"><view class="row"><text class="subtitle">用户身份审核</text><text class="badge pending">{{stats.identities}} 项待办</text></view><view class="muted">人工核验测试资料；管理员权限另行授权</view></view>
+    <view class="card" bindtap="feedback"><view class="row"><text class="subtitle">用户反馈</text><text class="badge pending">{{stats.feedback}} 项待办</text></view><view class="muted">查看问题与建议，回复用户反馈</view></view>
+  </view>
+</view>

@@ -4,13 +4,13 @@
 
 | 检查 | 实际结果 | 证据/范围 |
 |---|---|---|
-| npm test | 40通过、0失败、0跳过 | tests/business.test.js、http.test.js、pages.test.js、components.test.js |
-| npm run check | 通过 | 13页面、3共享组件，JS/JSON结构、云函数副本一致；WCC/WCSC全部编译 |
-| npm run spec:validate | 4变更全部通过严格校验 | identity-and-roles、room-schedule、reservation-lifecycle、admin-review |
+| npm test | 48通过、0失败、0跳过 | tests/business.test.js、http.test.js、pages.test.js、components.test.js、feedback.test.js |
+| npm run check | 通过 | 16页面、3共享组件，JS/JSON结构、版本一致性、云函数副本一致；WCC/WCSC全部编译 |
+| npm run spec:validate | 5变更全部通过严格校验 | identity-and-roles、room-schedule、reservation-lifecycle、admin-review、profile-and-feedback |
 | 独立PostgreSQL连接池并发 | 1通过、0失败、0跳过 | 配置专用TEST_DATABASE_URL运行test:postgres；两个独立Pool同房抢约仅一个成功 |
 | npm start + npm run smoke | 通过 | 持久化data/local数据库启动、真实HTTP健康检查、测试登录和五间会议室读取 |
 | npm audit --omit=dev --registry=https://registry.npmjs.org | 运行时依赖0已知漏洞 | 默认镜像不支持audit，改用官方审计接口；不把此结论扩大到全部开发依赖 |
-| 微信开发者工具打开/运行 | 未验证 | 本机常用目录及安装记录未发现该工具，touristappid未验证工具版本兼容性 |
+| 微信开发者工具打开/运行 | 基本连通已验证 | 已安装Stable2.02.2609250并导入工程，使用工具内置测试号；用户完成首次信任确认后，模拟器测试学生登录成功，首页读取数据库会议室资料。尚未完成全部页面人工验收 |
 | 云函数部署、云PG连接、真机 | 未验证 | 未提供AppID、云环境及账号；没有部署任何外部资源 |
 | 学校SSO/真实身份核验 | 未接入 | 仅虚构测试身份，没有学校认证授权 |
 
@@ -26,10 +26,12 @@
 - 并发/幂等：双用户、20并发、同键并发重试、同键异内容拒绝、取消后重试不重建；真实PostgreSQL两个独立连接池验证互斥。
 - 页面事件：真实Page脚本在微信宿主API测试桩中调用真实HTTP和PostgreSQL，跑通学生申请→负责人批准→本人取消、教师直约、人工身份核验。没有用固定接口响应冒充后端。
 - 组件：WCC生成模板在官方组件模拟框架渲染，检查14:30—17:50占用条百分比及日期清空后空状态。编译曾发现WXML转义和WXSS通配选择器错误，已修正后通过。
+- 我的页面新增：个人信息和反馈中心入口、当前版本与package.json一致；真实页面事件对接口验证本人资料、反馈提交和管理员回复可见。反馈另覆盖归属伪造、他人隔离、幂等并发、空白/超长内容和管理员权限。原有40项预约回归仍通过，总计48项。
+- 微信开发者工具实看：测试学生“我的”两个新入口及v1.0.0可见；个人信息页显示本人姓名、学号、类型、电话、核验状态；反馈中心类型选择、文本输入和“我的反馈”页正常。未将这些模拟器观察扩大为真机验收。
 
 ## 限制与重现
 
-Page宿主API和JSDOM模拟不等同真实微信渲染、原生picker、网络域名限制或真机测试。WCC/WCSC包版本较旧，独立编译可发现语法错误，不能证明当前开发者工具和所有手机上的视觉一致。暂未产出伪称真实小程序运行的截图。
+Page宿主API和JSDOM模拟不等同真实微信渲染、原生picker、网络域名限制或真机测试。WCC/WCSC包版本较旧，独立编译可发现语法错误，不能证明所有设备上的视觉一致。本次另在真实微信开发者工具中观察到登录页和首页运行，并成功连接回环后端；未据此宣称全页面或真机验收通过。控制台保留的401为首次未登录时的接口响应，登录后首页数据加载成功。
 
 运行 `npm test` 和 `npm run check`。跨连接测试需将 `TEST_DATABASE_URL` 指向专用测试库，再运行 `npm run test:postgres`；未配置会明确跳过，不算通过。云端仍须重复执行并记录。设备步骤见 acceptance.md。
 

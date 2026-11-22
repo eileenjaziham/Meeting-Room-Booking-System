@@ -45,6 +45,8 @@ function conflict(state, row, exceptId) {
 }
 const hash = value => createHash('sha256').update(value).digest('hex');
 const labels = { pending: '待确认', approved: '预约成功', rejected: '已拒绝', cancelled: '已取消', expired: '已失效', completed: '已完成' };
+const feedbackCategories = { usage: '使用问题', reservation: '预约问题', suggestion: '功能建议', other: '其他反馈' };
+const feedbackView = row => ({ id: row.id, category: row.category, categoryText: feedbackCategories[row.category], content: row.content, status: row.status, statusText: row.status === 'replied' ? '已回复' : '待处理', reply: row.reply || '', createdAt: row.createdAt, repliedAt: row.repliedAt || null });
 
 function createService(db, { clock = Date.now } = {}) {
   async function execute(actorId, action, input = {}) {
@@ -67,6 +69,24 @@ function createService(db, { clock = Date.now } = {}) {
       const view = row => ({ ...row, statusText: labels[row.status], canCancel: row.userId === actorId && active(row) && row.startAt > now, room: state.rooms.find(x => x.id === row.roomId) });
       const findReservation = () => { const row = state.reservations.find(x => x.id === input.id); if (!row) fail('NOT_FOUND', '预约不存在', 404); return row; };
       if (action === 'me') return { user: publicUser(user), identityHistory: state.identities.filter(x => x.userId === actorId).sort((a,b)=>b.submittedAt-a.submittedAt), serverNow: now };
+      // 已登录但未核验的用户也可以反馈使用问题；归属只取可信会话。
+      if (action === 'feedback.mine') return state.feedback.filter(x => x.userId === actorId).sort((a,b)=>b.createdAt-a.createdAt).map(feedbackView);
+      if (action === 'feedback.submit') {
+        const category = text(input.category, '反馈类型', 30);
+        if (!Object.hasOwn(feedbackCategories, category)) fail('VALIDATION', '请选择有效的反馈类型');
+        const content = text(input.content, '反馈内容', 1000);
+        const requestId = text(input.requestId, '请求标识', 100, 8);
+        const fingerprint = hash(JSON.stringify({ category, content }));
+        const previous = state.feedback.find(x => x.userId === actorId && x.requestId === requestId);
+        if (previous) {
+          if (previous.fingerprint !== fingerprint) fail('IDEMPOTENCY_MISMATCH', '同一请求标识不能用于不同反馈内容', 409);
+          return { ...feedbackView(previous), replayed: true };
+        }
+        const row = { id: randomUUID(), userId: actorId, category, content, requestId, fingerprint, status: 'pending', createdAt: now };
+        state.feedback.push(row);
+        audit(row.id, 'feedback.submit');
+        return feedbackView(row);
+      }
       if (action === 'identity.submit') {
         if (user.verification === 'approved' || user.verification === 'pending') fail('STATE', '已通过或待审核的身份不能重复修改', 409);
         const profile = { name: text(input.name, '姓名', 50), studentNo: text(input.studentNo, '学工号', 30), identityType: input.identityType, phone: phone(input.phone) };
@@ -125,7 +145,20 @@ function createService(db, { clock = Date.now } = {}) {
         audit(row.id, 'reservation.cancel');
         return view(row);
       }
-      if (action === 'admin.dashboard') return { reservations: state.reservations.filter(x=>x.status==='pending').length, identities: state.identities.filter(x=>x.status==='pending').length, total: state.reservations.length };
+      if (action === 'admin.dashboard') return { reservations: state.reservations.filter(x=>x.status==='pending').length, identities: state.identities.filter(x=>x.status==='pending').length, feedback: state.feedback.filter(x=>x.status==='pending').length, total: state.reservations.length };
+      if (action === 'admin.feedback') {
+        if (input.status && !['pending', 'replied'].includes(input.status)) fail('VALIDATION', '反馈状态无效');
+        return state.feedback.filter(x => !input.status || x.status === input.status).sort((a,b)=>b.createdAt-a.createdAt).map(row => ({ ...feedbackView(row), applicantName: state.users.find(x=>x.id===row.userId).name || '未填写姓名', repliedBy: row.repliedBy || null }));
+      }
+      if (action === 'admin.replyFeedback') {
+        const row = state.feedback.find(x => x.id === input.id);
+        if (!row) fail('NOT_FOUND', '反馈记录不存在', 404);
+        if (row.status !== 'pending') fail('STATE', '该反馈已回复，请刷新查看', 409);
+        const reply = text(input.reply, '回复内容', 1000);
+        Object.assign(row, { status: 'replied', reply, repliedBy: actorId, repliedAt: now });
+        audit(row.id, 'feedback.reply');
+        return feedbackView(row);
+      }
       if (action === 'admin.reservations') {
         if (input.date) date(input.date);
         return state.reservations.filter(x => (!input.roomId || x.roomId === input.roomId) && (!input.date || x.date === input.date) && (!input.status || x.status === input.status) && (!input.applicant || x.applicantName.includes(input.applicant) || x.studentNo.includes(input.applicant))).sort((a,b)=>b.createdAt-a.createdAt).map(view);

@@ -23,7 +23,14 @@ CREATE TABLE IF NOT EXISTS idempotency (
   id text PRIMARY KEY, user_id text NOT NULL REFERENCES users(id), data jsonb NOT NULL
 );
 CREATE TABLE IF NOT EXISTS audit_logs (id text PRIMARY KEY, data jsonb NOT NULL);
-REVOKE ALL ON app_lock, users, rooms, admin_grants, identity_reviews, reservations, idempotency, audit_logs FROM PUBLIC;
+CREATE TABLE IF NOT EXISTS feedback (
+  id text PRIMARY KEY, user_id text NOT NULL REFERENCES users(id), data jsonb NOT NULL,
+  CHECK (data->>'status' IN ('pending', 'replied')),
+  CHECK (length(btrim(data->>'content')) BETWEEN 1 AND 1000)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS feedback_request ON feedback (user_id, (data->>'requestId'));
+CREATE INDEX IF NOT EXISTS feedback_owner_status ON feedback (user_id, (data->>'status'));
+REVOKE ALL ON app_lock, users, rooms, admin_grants, identity_reviews, reservations, idempotency, audit_logs, feedback FROM PUBLIC;
 -- 无客户端 RLS policy，客户端角色即使被平台授予表权限也不能读写。
 -- 服务端须使用表所有者或获授权的 BYPASSRLS 角色。
 ALTER TABLE app_lock ENABLE ROW LEVEL SECURITY;
@@ -34,3 +41,4 @@ ALTER TABLE identity_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE idempotency ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;

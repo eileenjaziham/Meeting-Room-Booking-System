@@ -1,0 +1,1 @@
+.content{white-space:pre-wrap;word-break:break-all;margin:16rpx 0;line-height:1.8}.reply{background:#edf7f1;border-radius:12rpx;padding:18rpx;color:#32835a;white-space:pre-wrap;word-break:break-all}.reply-editor textarea{height:230rpx}.reply-editor button{margin-top:24rpx}.card .subtitle{margin-bottom:0}

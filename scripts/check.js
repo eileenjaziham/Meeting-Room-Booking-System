@@ -4,6 +4,7 @@ const files=[];function walk(dir){for(const item of fs.readdirSync(dir,{withFile
 for(const dir of ['miniprogram','server','scripts','tests','tests-postgres','cloudfunctions'])walk(path.join(root,dir));
 let js=0,json=0;for(const file of files){if(file.endsWith('.js')){new vm.Script(fs.readFileSync(file,'utf8'),{filename:file});js++;}if(file.endsWith('.json')){JSON.parse(fs.readFileSync(file,'utf8'));json++;}}
 const app=JSON.parse(fs.readFileSync(path.join(mini,'app.json'),'utf8'));
+if(require('../miniprogram/version').version!==require('../package.json').version)throw Error('小程序版本与 package.json 不一致，请运行 npm run version:sync');
 for(const page of app.pages)for(const ext of ['js','json','wxml','wxss'])if(!fs.existsSync(path.join(mini,page+'.'+ext)))throw Error('页面文件缺失：'+page+'.'+ext);
 for(const entry of app.tabBar.list)for(const key of ['iconPath','selectedIconPath'])if(!fs.existsSync(path.join(mini,entry[key])))throw Error('导航图标缺失');
 for(const [name,entry]of Object.entries(app.usingComponents))for(const ext of ['js','json','wxml','wxss'])if(!fs.existsSync(path.join(mini,entry+'.'+ext)))throw Error('组件文件缺失：'+name);

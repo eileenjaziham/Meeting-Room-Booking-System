@@ -15,6 +15,9 @@ test('原生 Page 事件连接真实接口：学生提交、管理员批准、�
  const api=require('../miniprogram/utils/api');
  try{
   const login=page('login');await login.login({currentTarget:{dataset:{account:'demo-student'}}});assert.equal(app.globalData.user.identityType,'student');
+  const profile=page('profile');await profile.load();assert.equal(profile.data.version,require('../package.json').version);profile.personalInfo();assert.equal(navigation.at(-1),'/pages/personal-info/index');profile.feedback();assert.equal(navigation.at(-1),'/pages/feedback/index');
+  const info=page('personal-info');await info.load();assert.equal(info.data.profile.studentNo,'DEMO-S001');assert.equal(info.data.profile.phone,'13800000001');assert.equal(info.data.statusText,'已通过核验');
+  const feedback=page('feedback');await feedback.load();feedback.content({detail:{value:'页面联调：建议增加使用说明。'}});await feedback.submit();assert.equal(feedback.data.tab,'mine');assert.equal(feedback.data.records.length,1);assert.equal(feedback.data.records[0].status,'pending');const feedbackId=feedback.data.records[0].id;
   const home=page('home');home.onLoad();home.setData({date:'2035-01-02'});home.setMonth(home.data.date);await home.load();assert.equal(home.data.rooms.length,5);
   home.openRoom({currentTarget:{dataset:{id:'7081'}}});assert.match(navigation.at(-1),/date=2035-01-02/);
   const room=page('room');room.onLoad({id:'7081',date:'2035-01-02'});await room.load();room.changeTime({currentTarget:{dataset:{field:'start'}},detail:{value:'14:30'}});room.changeTime({currentTarget:{dataset:{field:'end'}},detail:{value:'17:50'}});room.next();assert.match(navigation.at(-1),/start=14:30&end=17:50/);
@@ -23,9 +26,11 @@ test('原生 Page 事件连接真实接口：学生提交、管理员批准、�
   assert.equal((await api.call('rooms.detail',{roomId:'7081',date:'2035-01-02'})).occupied[0].end,'17:50');
   home.selectDate({currentTarget:{dataset:{date:'2035-01-03'}}});await idle();assert.equal(home.data.rooms.find(x=>x.id==='7081').occupied.length,0);
   await api.login('demo-admin');const admin=page('admin');await admin.load();assert.equal(admin.data.stats.reservations,1);
+  assert.equal(admin.data.stats.feedback,1);const feedbackAdmin=page('admin-feedback');await feedbackAdmin.load();feedbackAdmin.select({currentTarget:{dataset:{id:feedbackId}}});feedbackAdmin.reply({detail:{value:'已收到，会补充使用说明。'}});await feedbackAdmin.submit();assert.equal(feedbackAdmin.data.records.length,0);
   const ledger=page('admin-records');ledger.onLoad({status:'pending'});await ledger.load();assert.equal(ledger.data.records[0].id,id);
   const detail=page('reservation');detail.onLoad({id,admin:'1'});await detail.load();await detail.review({currentTarget:{dataset:{decision:'approve'}}});assert.equal(detail.data.record.status,'approved');
   await api.login('demo-student');const mine=page('reservations');await mine.load();assert.equal(mine.data.records[0].status,'approved');
+  await feedback.load();assert.equal(feedback.data.records[0].reply,'已收到，会补充使用说明。');assert.equal(feedback.data.records[0].status,'replied');
   const owner=page('reservation');owner.onLoad({id});await owner.load();assert.equal(owner.data.record.canCancel,true);await owner.cancel();assert.equal(owner.data.record.status,'cancelled');
   assert.equal((await api.call('rooms.detail',{roomId:'7081',date:'2035-01-02'})).occupied.length,0);
   await api.login('demo-teacher');const teacher=page('booking');teacher.setData({roomId:'7091',date:'2035-01-02',start:'09:15',end:'11:45',purpose:'教师会议',attendees:'5'});await teacher.load();await teacher.submit();const teacherId=navigation.at(-1).split('id=')[1];assert.equal((await api.call('reservation.detail',{id:teacherId})).status,'approved');
