@@ -1,0 +1,29 @@
+{
+  "name": "ccnu-room-reservation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "华中师范大学计算机学院会议室预约微信小程序（课程演示）",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/local.js",
+    "smoke": "node scripts/smoke.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "check": "node scripts/check.js && node scripts/compile-mini.js",
+    "db:init": "node --env-file-if-exists=.env scripts/db-init.js",
+    "cloud:prepare": "node scripts/prepare-cloud.js",
+    "spec:validate": "openspec validate --all --strict",
+    "test:postgres": "node --env-file-if-exists=.env --test tests-postgres/*.test.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "^2.0.0",
+    "jsdom": "^29.1.1",
+    "miniprogram-compiler": "^0.2.3",
+    "miniprogram-simulate": "^1.7.0"
+  }
+}

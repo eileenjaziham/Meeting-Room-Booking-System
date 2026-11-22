@@ -1,0 +1,1 @@
+.room-photo{padding:0;overflow:hidden}.room-photo image{width:100%;height:330rpx;display:block}.photo-note{padding:10rpx 20rpx;color:#8390a1;font-size:21rpx}.time-row{display:flex;align-items:center;gap:20rpx;margin:30rpx 0}.time-row>view{flex:1}.primary{margin-top:28rpx}

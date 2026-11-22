@@ -1,0 +1,4 @@
+<view class="bar" aria-label="绿色空闲，红色占用，开放时间8点到22点"><view wx:for="{{segments}}" wx:key="start" class="occupied" style="left:{{item.left}}%;width:{{item.width}}%"></view></view>
+<view class="ticks"><text>08:00</text><text>12:00</text><text>16:00</text><text>22:00</text></view>
+<view wx:if="{{detail}}" class="legend"><text class="green">● 空闲</text><text class="red">● 已占用</text><text>开放时间外不可预约</text></view>
+<view wx:if="{{detail}}" class="periods"><text wx:if="{{!occupied.length}}">当日暂无占用，提交时仍会再次校验</text><view wx:for="{{occupied}}" wx:key="start">{{item.start}}—{{item.end}}　已占用</view></view>

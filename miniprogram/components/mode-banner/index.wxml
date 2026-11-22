@@ -1,0 +1,1 @@
+<view class="banner {{local ? '' : 'cloud'}}">{{local ? '本地开发环境 · PostgreSQL 测试数据 · 非学校正式服务' : '课程云环境 · 身份采用人工核验 · SSO 未接入'}}</view>

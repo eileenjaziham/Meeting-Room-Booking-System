@@ -1,0 +1,75 @@
+{
+  "source": "原型文件.pip",
+  "sourceBytes": 7194915,
+  "sourceSha256": "03dd925af842b9992bae09d6ce5117d2d9aa9704dc6c6f1a4f24a25fca552b29",
+  "parsedLayers": false,
+  "entries": [
+    {
+      "name": "原型文件.pip",
+      "bytes": 190768,
+      "sha256": "258ef947012f6863df4cd10ecd5dc0619ee56e5072d1e3a862e66b6f226779a6",
+      "format": "pixso-kw...compress:zstd(./..0.."
+    },
+    {
+      "name": "312e6b72ad40f3c0198dec6c097fe6b475a297d9.thumb.png",
+      "bytes": 68863,
+      "sha256": "f3750041db2cc6957950b6fc7d423b0907ff3f74eec66f4c37d486fe22d139b7",
+      "width": 266,
+      "height": 576
+    },
+    {
+      "name": "04d000f15855af367d84b4dbfb68b2a884cb0f11.png",
+      "bytes": 2697989,
+      "sha256": "20e7c29a6a6e76e48f32857eec023a6cff55166e741790c1f4b687f5465b6e2d",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "name": "63352a7a279b532fbd13660090b6216345fef451.png",
+      "bytes": 1921073,
+      "sha256": "46434635e100f1e9783af79e1f7f10993f8ecffc5316eb9cf6bbb0a3d2a503e3",
+      "width": 851,
+      "height": 1849
+    },
+    {
+      "name": "c25c404427360251226a7c6e7d7ceb624bca25fa.png",
+      "bytes": 1865452,
+      "sha256": "9489debe7d47d1951faf3adc9b9790614472b9b118f78c074e7a9af9d7a8105c",
+      "width": 850,
+      "height": 1850
+    },
+    {
+      "name": "362237e5bf5fec8a8a0f80128ca1d5e58b957156.png",
+      "bytes": 121969,
+      "sha256": "f9e4d34a93fc5ce9191c65c05a2766e1c8d2eeb0de9f72562e76797823f457a9",
+      "width": 212,
+      "height": 462
+    },
+    {
+      "name": "8094a71f62bec3836794408cb74b244ea9cd08b2.png",
+      "bytes": 175065,
+      "sha256": "1c9415d8dd53d0d4c1991937a0f31b58c70d4d62031c392149b7e6d137e3b7af",
+      "width": 384,
+      "height": 256
+    },
+    {
+      "name": "c919bc00efb60469bc4445cefca9a37d55517110.png",
+      "bytes": 133826,
+      "sha256": "0873a4d805d6f488f192dc4acfa54cfdadd7f16c84ac55cff1a0e3110b85c89d",
+      "width": 213,
+      "height": 462
+    },
+    {
+      "name": "VERSION",
+      "bytes": 51,
+      "sha256": "a39a0c186ba5c7f462d83ad74b5fd28626929c74d131ae8591c596d492360631",
+      "format": "{\"app_version\":\"v3.0.8.13\",\"kiwi"
+    },
+    {
+      "name": "pixso.binary",
+      "bytes": 36812,
+      "sha256": "c63de8a0a22464e96ae1745d5704b34f5c32708ff97e4fdfaebca50ac49bde69",
+      "format": "..Paint...type.....color.....opa"
+    }
+  ]
+}
