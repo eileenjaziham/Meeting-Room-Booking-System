@@ -2,12 +2,12 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');const {createRequire}=require('node:module');
 const {openDatabase}=require('../server/db');const {seed}=require('../server/seed');const {createService}=require('../server/service');const {createHttpServer}=require('../server/http');
 test('原生 Page 事件连接真实接口：学生提交、管理员批准、本人取消、教师直约、身份核验',async()=>{
- const db=await openDatabase({driver:'pglite',path:'memory://'});await seed(db,{demo:true});const server=createHttpServer(createService(db),{devLogin:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const db=await openDatabase({driver:'pglite',path:'memory://'});await seed(db,{demo:true});const server=createHttpServer(createService(db,{clock:()=>Date.parse('2035-01-01T07:00:00+08:00')}),{devLogin:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base='http://127.0.0.1:'+server.address().port;const storage=new Map(),pending=new Set(),navigation=[];const app={globalData:{user:null}};
  global.getApp=()=>app;global.wx={
  getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),
  getWindowInfo:()=>({statusBarHeight:24}),showToast:()=>{},stopPullDownRefresh:()=>{},showModal:async()=>({confirm:true}),
- navigateTo:v=>navigation.push(v.url),redirectTo:v=>navigation.push(v.url),switchTab:v=>navigation.push(v.url),
+ navigateTo:v=>navigation.push(v.url),redirectTo:v=>navigation.push(v.url),switchTab:v=>navigation.push(v.url),reLaunch:v=>navigation.push(v.url),
  request(options){const task=fetch(base+new URL(options.url).pathname,{method:options.method,headers:{...options.header,'Content-Type':'application/json'},body:JSON.stringify(options.data)}).then(async r=>options.success({statusCode:r.status,data:await r.json()})).catch(()=>options.fail()).finally(()=>pending.delete(task));pending.add(task);}
  };
  const idle=async()=>{do{await Promise.all([...pending]);await new Promise(setImmediate);}while(pending.size);};
@@ -21,8 +21,10 @@ test('原生 Page 事件连接真实接口：学生提交、管理员批准、�
   const home=page('home');home.onLoad();home.setData({date:'2035-01-02'});home.setMonth(home.data.date);await home.load();assert.equal(home.data.rooms.length,5);
   home.openRoom({currentTarget:{dataset:{id:'7081'}}});assert.match(navigation.at(-1),/date=2035-01-02/);
   const room=page('room');room.onLoad({id:'7081',date:'2035-01-02'});await room.load();room.changeTime({currentTarget:{dataset:{field:'start'}},detail:{value:'14:30'}});room.changeTime({currentTarget:{dataset:{field:'end'}},detail:{value:'17:50'}});room.next();assert.match(navigation.at(-1),/start=14:30&end=17:50/);
-  const booking=page('booking');booking.setData({roomId:'7081',date:'2035-01-02',start:'14:30',end:'17:50'});await booking.load();booking.field({currentTarget:{dataset:{field:'purpose'}},detail:{value:'页面联调研讨'}});booking.field({currentTarget:{dataset:{field:'attendees'}},detail:{value:'8'}});await booking.submit();assert.equal(booking.data.error,'');assert.match(navigation.at(-1),/pages\/result/);
-  const id=navigation.at(-1).split('id=')[1];const result=page('result');result.id=id;await result.load();assert.equal(result.data.record.status,'pending');
+  assert.equal(room.data.dateOptions.length,7);assert.match(room.data.dateLabel,/星期/);assert.ok(room.data.dateOptions.every(x=>!x.label.includes('2035')));assert.equal(home.data.dateLabel,'1月2日 星期二');
+  const selectedBefore=home.data.date;home.selectDate({currentTarget:{dataset:{date:'2035-01-09'}}});assert.equal(home.data.date,selectedBefore);
+  const booking=page('booking');booking.setData({roomId:'7081',date:'2035-01-02',start:'14:30',end:'17:50'});await booking.load();await booking.submit();assert.equal(booking.data.error,'请填写负责老师');booking.field({currentTarget:{dataset:{field:'responsibleTeacher'}},detail:{value:'测试负责老师'}});booking.field({currentTarget:{dataset:{field:'purpose'}},detail:{value:'页面联调研讨'}});booking.field({currentTarget:{dataset:{field:'attendees'}},detail:{value:'8'}});await booking.submit();assert.equal(booking.data.error,'');assert.match(navigation.at(-1),/pages\/result/);
+  const id=navigation.at(-1).split('id=')[1];const result=page('result');result.id=id;await result.load();assert.equal(result.data.record.status,'pending');assert.equal(result.data.record.responsibleTeacher,'测试负责老师');assert.equal(result.data.record.borrowerName,'测试学生甲');
   assert.equal((await api.call('rooms.detail',{roomId:'7081',date:'2035-01-02'})).occupied[0].end,'17:50');
   home.selectDate({currentTarget:{dataset:{date:'2035-01-03'}}});await idle();assert.equal(home.data.rooms.find(x=>x.id==='7081').occupied.length,0);
   await api.login('demo-admin');const admin=page('admin');await admin.load();assert.equal(admin.data.stats.reservations,1);

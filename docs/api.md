@@ -14,7 +14,7 @@
 | identity.submit | name, studentNo, identityType, phone | 未提交/已拒绝账号，创建待核验资料；不提升权限 |
 | rooms.list | date | 已核验师生；五房间和脱敏 occupied |
 | rooms.detail | roomId, date | 已核验师生；指定房间资料和占用 |
-| reservation.create | roomId, date, start, end, purpose, attendees, phone, notes?, requestId | 服务端核验；学生 pending，教师 approved |
+| reservation.create | roomId, date, start, end, responsibleTeacher, borrowerName, purpose, attendees, phone, notes?, requestId | 负责老师与借用人各1—50字必填；学生pending，教师approved；权威申请人取会话 |
 | reservation.mine | status?, date? | 本人预约筛选 |
 | reservation.detail | id | 仅本人普通详情，ID 猜测不能越权 |
 | reservation.cancel | id | 仅本人未开始的有效预约 |
@@ -27,7 +27,7 @@
 
 本地另提供 `GET /health` 显示数据库驱动和开发模式；`POST /dev/login {account}` 只在回环开发服务启用，返回随机会话令牌。不存在客户端授予管理员权限接口。
 
-预约字段：用途1—200字，备注≤500字，预计人数正整数且不超过已知容量；7060 未知容量仍可提交并提示确认。手机号只检查大陆11位格式。日期 YYYY-MM-DD，时间 HH:mm。重复提交 requestId 为8—100字符，用户作用域唯一，相同内容返回原预约；不同内容相同 key 返回 IDEMPOTENCY_MISMATCH。没有自动重建取消预约的行为。
+预约字段：用途1—200字，备注≤500字，预计人数正整数且不超过房间固定容量；五房资料以Pixso为准。日期YYYY-MM-DD、时间HH:mm，仅允许服务器北京时间含今天7个日期且开始晚于当前时刻；第8天及之后返回BOOKING_WINDOW并提示联系曹闯老师（QQ28061535）。me接口同时提供bookingWindow.first/last和管理员公开联系信息。手机号只检查大陆11位格式。requestId为8—100字符，用户作用域唯一，相同内容返回原预约；同键异内容返回IDEMPOTENCY_MISMATCH，取消后不重建。
 
 占用条对象只有 `{start,end,label:'已占用'}`，不返回预约ID、申请人姓名、电话、用途或待确认/成功的区别。查询不预留时段。
 

@@ -1,1 +1,1 @@
-.notice{margin-top:24rpx}.stack button{text-align:left}
+.login-brand{height:250rpx;overflow:hidden}.login-brand image{width:100%;display:block}.login-page{padding-top:8rpx}.login-subtitle{font-size:25rpx;color:#7188a8;margin:0 0 24rpx}.account{width:100%;text-align:left;padding:18rpx 24rpx}.account .small{font-size:22rpx;color:#7894bd}.stack button+button{margin-top:14rpx}.login-privacy{font-size:22rpx;line-height:1.8;margin-top:24rpx}

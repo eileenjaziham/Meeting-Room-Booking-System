@@ -1,7 +1,7 @@
 <mode-banner />
 <view class="page profile-page">
   <view class="card profile-header">
-    <view class="avatar"><view class="avatar-head"></view><view class="avatar-body"></view></view>
+    <view class="avatar"><image src="/assets/icons/profile.svg" mode="aspectFit" /></view>
     <view class="profile-heading">
       <view class="title">{{user.name || '我的'}}</view>
       <view wx:if="{{user}}" class="muted">{{user.verification === 'approved' ? (user.identityType === 'teacher' ? '已核验教师' : '已核验学生') : '身份待核验'}}{{user.isAdmin ? ' · 授权负责人' : ''}}</view>
@@ -10,12 +10,12 @@
   </view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
   <view class="card menu-card">
-    <button class="menu-item" bindtap="personalInfo"><view class="menu-left"><text class="menu-icon">◎</text><view><view>个人信息</view><view class="menu-description">查看姓名、学号及联系方式</view></view></view><text class="menu-arrow">›</text></button>
-    <button class="menu-item" bindtap="bookings"><view class="menu-left"><text class="menu-icon">▦</text><text>我的预约</text></view><text class="menu-arrow">›</text></button>
-    <button class="menu-item" bindtap="feedback"><view class="menu-left"><text class="menu-icon">✉</text><view><view>反馈中心</view><view class="menu-description">提交意见，查看反馈与回复</view></view></view><text class="menu-arrow">›</text></button>
-    <button class="menu-item" bindtap="notices"><view class="menu-left"><text class="menu-icon">▤</text><text>预约须知</text></view><text class="menu-arrow">›</text></button>
-    <button wx:if="{{user.isAdmin}}" class="menu-item admin-entry" bindtap="admin"><view class="menu-left"><text class="menu-icon">▣</text><text>管理工作台</text></view><text class="menu-arrow">›</text></button>
+    <view class="profile-menu-row" bindtap="personalInfo" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/profile.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">个人信息</view><view class="menu-description">姓名、学号与联系方式</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
+    <view class="profile-menu-row" bindtap="bookings" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/calendar.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">我的预约</view><view class="menu-description">预约记录与审核进度</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
+    <view class="profile-menu-row" bindtap="feedback" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/feedback.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">反馈中心</view><view class="menu-description">意见建议与处理回复</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
+    <view class="profile-menu-row" bindtap="notices" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/notices.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">预约须知</view><view class="menu-description">预约规则与管理员联系</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
+    <view wx:if="{{user.isAdmin}}" class="profile-menu-row" bindtap="admin" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/admin.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">管理工作台</view><view class="menu-description">申请审核与预约管理</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
   </view>
-  <button wx:if="{{user}}" class="switch-account" bindtap="logout">切换登录账号</button>
+  <view wx:if="{{user}}" class="switch-account" bindtap="logout" role="button" hover-class="row-pressed">切换登录账号</view>
   <view class="app-version"><view>会议室预约</view><view>当前版本 v{{version}}</view></view>
 </view>

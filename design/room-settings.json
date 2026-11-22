@@ -1,0 +1,37 @@
+{
+  "source": "原型文件.pip",
+  "sourceSha256": "03dd925af842b9992bae09d6ce5117d2d9aa9704dc6c6f1a4f24a25fca552b29",
+  "method": "ZIP + Zstandard 解压，读取原型中的UTF-8房间文字；未宣称解码完整图层结构",
+  "rooms": [
+    {
+      "id": "7060",
+      "capacity": 10,
+      "equipment": "屏幕",
+      "sourceText": "7060    容量 ：10人    设备：屏幕"
+    },
+    {
+      "id": "7081",
+      "capacity": 10,
+      "equipment": "屏幕",
+      "sourceText": "7081    容量 ：10人    设备：屏幕"
+    },
+    {
+      "id": "7091",
+      "capacity": 10,
+      "equipment": "屏幕",
+      "sourceText": "7091  \n容量 ：10人    设备：屏幕"
+    },
+    {
+      "id": "7119",
+      "capacity": 100,
+      "equipment": "投影、音响、话筒",
+      "sourceText": "7119    容量 ：100人    设备：投影、音响、话筒"
+    },
+    {
+      "id": "7052",
+      "capacity": 40,
+      "equipment": "屏幕",
+      "sourceText": "7052    容量 ：40人    设备：屏幕"
+    }
+  ]
+}

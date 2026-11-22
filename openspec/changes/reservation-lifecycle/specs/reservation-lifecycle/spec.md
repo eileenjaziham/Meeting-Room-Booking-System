@@ -5,7 +5,7 @@
 ## ADDED Requirements
 
 ### Requirement: Minute-accurate legal interval
-系统 SHALL 以服务器北京时间校验同一天 08:00 ≤ 开始 < 结束 ≤ 22:00，开始必须晚于当前时间；七天仅为建议。
+系统 SHALL 以服务器北京时间校验同一天08:00 ≤ 开始 < 结束 ≤ 22:00，开始必须晚于当前时间，且最多提前7天；第8天起不允许线上预约。
 
 #### Scenario: Arbitrary valid minutes
 - **WHEN** 用户选择未来日期的 09:15—11:45

@@ -5,11 +5,11 @@
 ## ADDED Requirements
 
 ### Requirement: Five rooms follow requirement baseline
-系统 SHALL 显示 7060、7081、7091、7119、7052，容量分别为未知、12、12、80、35；未核实设备不得伪造。
+系统 SHALL 按2026-11-23用户确认的原型显示7060/7081/7091各10人、屏幕，7119为100人、投影/音响/话筒，7052为40人、屏幕。
 
-#### Scenario: Unknown resource data
+#### Scenario: Fixed resource data
 - **WHEN** 用户查看 7060 资料
-- **THEN** 容量与设备显示待核实，不能把原型示例人数当正式容量
+- **THEN** 容量显示10人、设备屏幕，不显示待核实
 
 ### Requirement: Daily private occupancy snapshot
 系统 SHALL 按日期返回待确认和成功预约的占用，仅暴露起止时间；查询不锁定时段。

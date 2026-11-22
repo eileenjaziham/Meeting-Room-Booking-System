@@ -1,1 +1,10 @@
-<mode-banner /><view class="page"><view class="title">登录与身份认证</view><view class="card"><view class="subtitle">华中师范大学统一身份认证</view><view class="muted">学校 SSO 尚未获得接口授权。当前通过微信会话建立账号，再由授权负责人核验身份。本小程序不收集校园统一认证密码。</view><view wx:if="{{local}}" class="notice">以下均为虚构测试身份，仅在回环地址的本地开发服务开放。</view><view wx:if="{{error}}" class="error">{{error}}</view><view class="stack" wx:if="{{local}}"><button wx:for="{{accounts}}" wx:key="id" class="secondary" data-account="{{item.id}}" bindtap="login" disabled="{{busy}}"><view>{{item.label}}</view><view class="small">{{item.type}}</view></button></view><button wx:else class="primary" bindtap="login" loading="{{busy}}" disabled="{{busy}}">微信会话登录 / 进入人工核验</button></view></view>
+<mode-banner />
+<view class="login-brand"><image src="/assets/campus.png" mode="widthFix" /></view>
+<view class="page login-page"><view class="title">欢迎登录</view><view class="login-subtitle">计算机学院会议室预约</view>
+  <view class="card"><view class="subtitle">{{local ? '选择测试身份登录' : '微信会话登录'}}</view>
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <view wx:if="{{local}}" class="stack"><button wx:for="{{accounts}}" wx:key="id" class="secondary account" data-account="{{item.id}}" bindtap="login" disabled="{{busy}}"><view>{{item.label}}</view><view class="small">{{item.type}}</view></button></view>
+    <button wx:else class="primary" bindtap="login" loading="{{busy}}" disabled="{{busy}}">登录并进入身份核验</button>
+    <view class="muted login-privacy">学校统一身份认证尚未授权接入，当前使用隔离测试身份演示；本小程序不收集校园密码。</view>
+  </view>
+</view>

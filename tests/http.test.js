@@ -6,7 +6,7 @@ const {createService}=require('../server/service');
 const {createHttpServer}=require('../server/http');
 test('真实 HTTP + PostgreSQL：登录、会话权限、读房间、提交预约和管理员批准',async()=>{
   const db=await openDatabase({driver:'pglite',path:'memory://'});await seed(db,{demo:true});
-  const server=createHttpServer(createService(db),{devLogin:true,driver:db.driver});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+  const server=createHttpServer(createService(db,{clock:()=>Date.parse('2035-01-01T07:00:00+08:00')}),{devLogin:true,driver:db.driver});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
   const post=async(path,body,token)=>{const response=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(token||'')},body:JSON.stringify(body)});return {status:response.status,...await response.json()};};
   try{
     assert.equal((await (await fetch(base+'/health')).json()).database,'pglite');
@@ -16,7 +16,7 @@ test('真实 HTTP + PostgreSQL：登录、会话权限、读房间、提交预�
     const admin=(await post('/dev/login',{account:'demo-admin'})).data.token;
     assert.equal((await post('/api',{action:'admin.dashboard',payload:{isAdmin:true}},student)).status,403);
     assert.equal((await post('/api',{action:'rooms.list',payload:{date:'2035-01-02'}},student)).data.length,5);
-    const payload={roomId:'7081',date:'2035-01-02',start:'14:30',end:'17:50',purpose:'HTTP 集成测试',attendees:5,phone:'13800000001',requestId:'http-test-request'};
+    const payload={roomId:'7081',date:'2035-01-02',start:'14:30',end:'17:50',purpose:'HTTP 集成测试',responsibleTeacher:'测试负责老师',borrowerName:'测试借用人',attendees:5,phone:'13800000001',requestId:'http-test-request'};
     const a=await post('/api',{action:'reservation.create',payload},student);assert.equal(a.data.status,'pending');
     const b=await post('/api',{action:'admin.reviewReservation',payload:{id:a.data.id,decision:'approve'}},admin);assert.equal(b.data.status,'approved');
     const mine=await post('/api',{action:'reservation.mine'},student);assert.equal(mine.data.length,1);
@@ -24,3 +24,14 @@ test('真实 HTTP + PostgreSQL：登录、会话权限、读房间、提交预�
   }finally{await new Promise(r=>server.close(r));await db.close();}
 });
 test('开发登录关闭后无法使用测试账号',async()=>{const server=createHttpServer({execute(){throw Error('不应到达');}},{devLogin:false});await new Promise(r=>server.listen(0,'127.0.0.1',r));try{const r=await fetch('http://127.0.0.1:'+server.address().port+'/dev/login',{method:'POST',body:JSON.stringify({account:'demo-admin'})});assert.equal(r.status,403);}finally{await new Promise(r=>server.close(r));}});
+test('HTTP服务重建后登录保持有效，令牌仅存哈希，12小时到期后拒绝',async()=>{
+ const db=await openDatabase({driver:'pglite',path:'memory://'});await seed(db,{demo:true});let now=Date.parse('2035-01-01T07:00:00+08:00');let server;
+ const start=async()=>{server=createHttpServer(createService(db,{clock:()=>now}),{devLogin:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));return 'http://127.0.0.1:'+server.address().port;};
+ try{
+  let base=await start();const login=await fetch(base+'/dev/login',{method:'POST',body:JSON.stringify({account:'demo-student'})}).then(r=>r.json());const token=login.data.token;
+  const stored=await db.transact(s=>s.sessions[0]);assert.notEqual(stored.id,token);assert.equal(stored.userId,'demo-student');
+  await new Promise(r=>server.close(r));base=await start();
+  const me=await fetch(base+'/api',{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify({action:'me'})});assert.equal(me.status,200);assert.equal((await me.json()).data.user.id,'demo-student');
+  now+=12*3600000;const expired=await fetch(base+'/api',{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify({action:'me'})});assert.equal(expired.status,401);
+ }finally{if(server.listening)await new Promise(r=>server.close(r));await db.close();}
+});

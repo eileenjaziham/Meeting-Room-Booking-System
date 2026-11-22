@@ -1,5 +1,12 @@
 'use strict';
-const { randomUUID, createHash } = require('node:crypto');
+const { randomUUID, randomBytes, createHash } = require('node:crypto');
+const bookingPolicy = require('../shared/booking-policy.json');
+const DAY = 86400000;
+function bookingWindow(now) {
+  const first = new Date(now + 8 * 3600000).toISOString().slice(0, 10);
+  const last = new Date(Date.parse(first + 'T00:00:00+08:00') + bookingPolicy.maxAdvanceDays * DAY + 8 * 3600000).toISOString().slice(0, 10);
+  return { first, last, days: bookingPolicy.bookingDays, maxAdvanceDays: bookingPolicy.maxAdvanceDays, manager: bookingPolicy.manager };
+}
 class BusinessError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
 }
@@ -28,6 +35,8 @@ function interval(input, now) {
   const startAt = Date.parse(day + 'T' + input.start + ':00+08:00');
   const endAt = Date.parse(day + 'T' + input.end + ':00+08:00');
   if (startAt <= now) fail('PAST_TIME', '开始时间必须晚于服务器当前北京时间');
+  const window = bookingWindow(now);
+  if (day > window.last) fail('BOOKING_WINDOW', '仅可预约含今天在内的7天（今天至' + window.last + '）；更晚日期请联系曹闯老师申请，QQ：28061535');
   return { date: day, start: input.start, end: input.end, startAt, endAt };
 }
 function effective(row, now) {
@@ -68,7 +77,7 @@ function createService(db, { clock = Date.now } = {}) {
       const publicUser = u => ({ ...u, isAdmin: state.grants.some(x => x.id === u.id) });
       const view = row => ({ ...row, statusText: labels[row.status], canCancel: row.userId === actorId && active(row) && row.startAt > now, room: state.rooms.find(x => x.id === row.roomId) });
       const findReservation = () => { const row = state.reservations.find(x => x.id === input.id); if (!row) fail('NOT_FOUND', '预约不存在', 404); return row; };
-      if (action === 'me') return { user: publicUser(user), identityHistory: state.identities.filter(x => x.userId === actorId).sort((a,b)=>b.submittedAt-a.submittedAt), serverNow: now };
+      if (action === 'me') return { user: publicUser(user), identityHistory: state.identities.filter(x => x.userId === actorId).sort((a,b)=>b.submittedAt-a.submittedAt), serverNow: now, bookingWindow: bookingWindow(now) };
       // 已登录但未核验的用户也可以反馈使用问题；归属只取可信会话。
       if (action === 'feedback.mine') return state.feedback.filter(x => x.userId === actorId).sort((a,b)=>b.createdAt-a.createdAt).map(feedbackView);
       if (action === 'feedback.submit') {
@@ -109,7 +118,7 @@ function createService(db, { clock = Date.now } = {}) {
       if (action === 'reservation.create') {
         const requestKey = text(input.requestId, '请求标识', 100, 8);
         // 只对业务字段计算摘要，客户端角色/最终状态等不参与权威决策。
-        const payload = { roomId: input.roomId, date: input.date, start: input.start, end: input.end, purpose: input.purpose, attendees: input.attendees, phone: input.phone, notes: input.notes || '' };
+        const payload = { roomId: input.roomId, date: input.date, start: input.start, end: input.end, purpose: input.purpose, responsibleTeacher: input.responsibleTeacher, borrowerName: input.borrowerName, attendees: input.attendees, phone: input.phone, notes: input.notes || '' };
         const fingerprint = hash(JSON.stringify(payload));
         const requestId = hash(actorId + ':' + requestKey);
         const previous = state.requests.find(x => x.id === requestId);
@@ -121,7 +130,7 @@ function createService(db, { clock = Date.now } = {}) {
         if (!room) fail('NOT_FOUND', '会议室不存在', 404);
         const time = interval(input, now);
         capacity(room, input.attendees);
-        const row = { id: randomUUID(), userId: actorId, roomId: room.id, ...time, purpose: text(input.purpose, '用途', 200), attendees: input.attendees, phone: phone(input.phone), notes: text(input.notes || '', '备注', 500, 0), applicantName: user.name, studentNo: user.studentNo, identityType: user.identityType, status: user.identityType === 'teacher' ? 'approved' : 'pending', createdAt: now };
+        const row = { id: randomUUID(), userId: actorId, roomId: room.id, ...time, responsibleTeacher: text(input.responsibleTeacher, '负责老师', 50), borrowerName: text(input.borrowerName, '借用人', 50), purpose: text(input.purpose, '用途', 200), attendees: input.attendees, phone: phone(input.phone), notes: text(input.notes || '', '备注', 500, 0), applicantName: user.name, studentNo: user.studentNo, identityType: user.identityType, status: user.identityType === 'teacher' ? 'approved' : 'pending', createdAt: now };
         conflict(state, row);
         state.reservations.push(row);
         state.requests.push({ id: requestId, userId: actorId, fingerprint, reservationId: row.id, createdAt: now });
@@ -161,7 +170,7 @@ function createService(db, { clock = Date.now } = {}) {
       }
       if (action === 'admin.reservations') {
         if (input.date) date(input.date);
-        return state.reservations.filter(x => (!input.roomId || x.roomId === input.roomId) && (!input.date || x.date === input.date) && (!input.status || x.status === input.status) && (!input.applicant || x.applicantName.includes(input.applicant) || x.studentNo.includes(input.applicant))).sort((a,b)=>b.createdAt-a.createdAt).map(view);
+        return state.reservations.filter(x => (!input.roomId || x.roomId === input.roomId) && (!input.date || x.date === input.date) && (!input.status || x.status === input.status) && (!input.applicant || [x.applicantName,x.studentNo,x.borrowerName,x.responsibleTeacher].some(value=>(value||'').includes(input.applicant)))).sort((a,b)=>b.createdAt-a.createdAt).map(view);
       }
       if (action === 'admin.reservationDetail') return view(findReservation());
       if (action === 'admin.reviewReservation') {
@@ -173,6 +182,7 @@ function createService(db, { clock = Date.now } = {}) {
         else {
           const applicant = state.users.find(x => x.id === row.userId);
           if (!applicant || applicant.verification !== 'approved' || applicant.identityType !== 'student') fail('IDENTITY_REQUIRED', '申请人的学生资格已不符合要求', 409);
+          interval(row, now);
           capacity(state.rooms.find(x=>x.id===row.roomId), row.attendees);
           conflict(state, row, row.id);
         }
@@ -199,6 +209,19 @@ function createService(db, { clock = Date.now } = {}) {
       fail('NOT_FOUND', '接口不存在', 404);
     });
   }
-  return { execute };
+  // 仅由本地HTTP登录适配器调用；云端仍使用微信可信上下文，不暴露测试会话入口。
+  async function issueSession(userId) {
+    const token=randomBytes(32).toString('hex');
+    await db.transact(state=>{
+      if(!state.users.some(x=>x.id===userId))fail('UNAUTHENTICATED','测试用户不存在',401);
+      state.sessions.push({id:hash(token),userId,expiresAt:clock()+12*3600000});
+    });
+    return token;
+  }
+  async function resolveSession(token) {
+    if(!/^[a-f0-9]{64}$/.test(token||''))return null;
+    return db.transact(state=>{const session=state.sessions.find(x=>x.id===hash(token));return session&&session.expiresAt>clock()?session.userId:null;});
+  }
+  return { execute, issueSession, resolveSession };
 }
-module.exports = { createService, BusinessError, effective, interval, date, labels };
+module.exports = { createService, BusinessError, effective, interval, date, labels, bookingWindow };
