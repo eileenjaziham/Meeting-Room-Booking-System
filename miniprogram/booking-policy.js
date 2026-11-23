@@ -2,6 +2,7 @@
 module.exports = {
   "bookingDays": 7,
   "maxAdvanceDays": 6,
+  "selfCancellationLeadHours": 5,
   "manager": {
     "name": "曹闯老师",
     "qq": "28061535"

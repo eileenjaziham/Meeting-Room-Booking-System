@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const tables = { users: 'users', rooms: 'rooms', grants: 'admin_grants', identities: 'identity_reviews', reservations: 'reservations', requests: 'idempotency', feedback: 'feedback', sessions: 'sessions', audit: 'audit_logs' };
+const tables = { users: 'users', rooms: 'rooms', grants: 'admin_grants', identities: 'identity_reviews', reservations: 'reservations', requests: 'idempotency', feedback: 'feedback', sessions: 'sessions', blocks:'room_blocks',notifications:'notifications',audit: 'audit_logs' };
 
 /** PostgreSQL 和 PGlite 使用同一 schema / SQL / 业务代码。所有写入均在数据库行锁内。 */
 async function openDatabase(options = {}) {
@@ -48,8 +48,8 @@ async function openDatabase(options = {}) {
           const pk = key === 'grants' ? 'user_id' : 'id';
           let cols = [pk, 'data'];
           let args = [row.id, json];
-          if (['identities', 'reservations', 'requests', 'feedback', 'sessions'].includes(key)) { cols.push('user_id'); args.push(row.userId); }
-          if (key === 'reservations') { cols.push('room_id'); args.push(row.roomId); }
+          if (['identities', 'reservations', 'requests', 'feedback', 'sessions','notifications'].includes(key)) { cols.push('user_id'); args.push(row.userId); }
+          if (['reservations','blocks'].includes(key)) { cols.push('room_id'); args.push(row.roomId); }
           await client.query('INSERT INTO ' + table + ' (' + cols.join(',') + ') VALUES (' + args.map((_, i) => '$' + (i + 1)).join(',') + ') ON CONFLICT (' + pk + ') DO UPDATE SET data=EXCLUDED.data', args);
         }
       }

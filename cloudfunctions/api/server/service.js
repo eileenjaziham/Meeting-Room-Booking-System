@@ -2,6 +2,7 @@
 const { randomUUID, randomBytes, createHash } = require('node:crypto');
 const bookingPolicy = require('../shared/booking-policy.json');
 const DAY = 86400000;
+const CANCELLATION_LEAD = bookingPolicy.selfCancellationLeadHours * 3600000;
 function bookingWindow(now) {
   const first = new Date(now + 8 * 3600000).toISOString().slice(0, 10);
   const last = new Date(Date.parse(first + 'T00:00:00+08:00') + bookingPolicy.maxAdvanceDays * DAY + 8 * 3600000).toISOString().slice(0, 10);
@@ -17,6 +18,17 @@ function text(value, name, max, min = 1) {
 }
 function phone(value) {
   if (typeof value !== 'string' || !/^1[3-9]\d{9}$/.test(value)) fail('VALIDATION', '请输入中国大陆 11 位手机号（仅格式校验）');
+  return value;
+}
+function avatar(value){
+  const maxBytes=64*1024;
+  if(typeof value!=='string'||value.length>24+Math.ceil(maxBytes/3)*4)fail('AVATAR_SIZE','头像不能超过64KB，请选择较小的图片',413);
+  const match=/^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if(!match)fail('VALIDATION','请选择PNG或JPG格式的头像');
+  const bytes=Buffer.from(match[2],'base64');
+  if(bytes.length>maxBytes)fail('AVATAR_SIZE','头像不能超过64KB，请选择较小的图片',413);
+  const valid=match[1]==='png'?bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')):bytes.length>=4&&bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
+  if(!valid||bytes.toString('base64')!==match[2])fail('VALIDATION','头像图片格式无效，请重新选择');
   return value;
 }
 function date(value) {
@@ -45,12 +57,21 @@ function effective(row, now) {
   return row.status;
 }
 function active(row) { return row.status === 'pending' || row.status === 'approved'; }
+function blockRange(input,now){
+  const startDate=date(input.startDate),endDate=date(input.endDate),start=minutes(input.start),end=minutes(input.end);
+  const startAt=Date.parse(startDate+'T'+input.start+':00+08:00'),endAt=Date.parse(endDate+'T'+input.end+':00+08:00');
+  if(start<480||start>=1320||end<=480||end>1320||startAt>=endAt||endAt<=now)fail('TIME_RANGE','停用须在08:00—22:00开放时段内，结束时间须晚于开始和当前时间');
+  return {startDate,endDate,start:input.start,end:input.end,startAt,endAt};
+}
+function liveBlock(block,now){return block.status==='active'&&block.endAt>now;}
 function capacity(room, attendees) {
   if (!Number.isSafeInteger(attendees) || attendees <= 0) fail('VALIDATION', '预计人数须为正整数');
   if (room.capacity !== null && attendees > room.capacity) fail('CAPACITY', '人数超过会议室容量 ' + room.capacity + ' 人');
 }
 function conflict(state, row, exceptId) {
-  if (state.reservations.some(x => x.id !== exceptId && active(x) && x.roomId === row.roomId && row.startAt < x.endAt && row.endAt > x.startAt)) fail('CONFLICT', '该时间与已有占用冲突，请刷新日程后重新选择', 409);
+  if(state.blocks.some(block=>block.status==='active'&&block.roomId===row.roomId&&row.startAt<block.endAt&&row.endAt>block.startAt))fail('ROOM_UNAVAILABLE','该会议室在所选时段停用，请选择其他空闲时间',409);
+  const occupied=state.reservations.find(x => x.id !== exceptId && active(x) && x.roomId === row.roomId && row.startAt < x.endAt && row.endAt > x.startAt);
+  if (occupied) fail('CONFLICT', occupied.start + '—' + occupied.end + ' 已被预约，请刷新日程后选择其他空闲时段', 409);
 }
 const hash = value => createHash('sha256').update(value).digest('hex');
 const labels = { pending: '待确认', approved: '预约成功', rejected: '已拒绝', cancelled: '已取消', expired: '已失效', completed: '已完成' };
@@ -68,16 +89,36 @@ function createService(db, { clock = Date.now } = {}) {
       if (!user) fail('UNAUTHENTICATED', '登录会话不存在', 401);
       const isAdmin = state.grants.some(x => x.id === actorId);
       const audit = (objectId, operation, detail = '') => state.audit.push({ id: randomUUID(), actorId, objectId, operation, detail, at: now });
+      const notifyReservation=(row,type,message)=>state.notifications.push({id:randomUUID(),userId:row.userId,reservationId:row.id,type,content:row.roomId+'会议室 '+row.date+' '+row.start+'—'+row.end+' '+message,createdAt:now,readAt:null});
       for (const row of state.reservations) {
         const status = effective(row, now);
-        if (status !== row.status) { row.status = status; row.stateChangedAt = now; }
+        if (status !== row.status) { row.status = status; row.stateChangedAt = now;if(status==='expired')notifyReservation(row,'reservation-expired','的申请因开始时仍未审核已失效。'); }
       }
       const verified = () => { if (user.verification !== 'approved' || !['student', 'teacher'].includes(user.identityType)) fail('IDENTITY_REQUIRED', '请先完成身份核验', 403); };
       const admin = () => { if (!isAdmin) fail('FORBIDDEN', '仅独立授权的办公室负责人可操作', 403); };
       const publicUser = u => ({ ...u, isAdmin: state.grants.some(x => x.id === u.id) });
-      const view = row => ({ ...row, statusText: labels[row.status], canCancel: row.userId === actorId && active(row) && row.startAt > now, room: state.rooms.find(x => x.id === row.roomId) });
+      const view = row => ({ ...row, statusText: labels[row.status], canCancel: row.userId === actorId && active(row) && row.startAt - now >= CANCELLATION_LEAD, canAdminCancel:isAdmin && active(row), cancelDeadline:row.startAt-CANCELLATION_LEAD, ...(row.status==='approved'&&(row.userId===actorId||isAdmin)?{accessCode:row.roomId+'1234#'}:{}), room: state.rooms.find(x => x.id === row.roomId) });
       const findReservation = () => { const row = state.reservations.find(x => x.id === input.id); if (!row) fail('NOT_FOUND', '预约不存在', 404); return row; };
-      if (action === 'me') return { user: publicUser(user), identityHistory: state.identities.filter(x => x.userId === actorId).sort((a,b)=>b.submittedAt-a.submittedAt), serverNow: now, bookingWindow: bookingWindow(now) };
+      if (action === 'me') {
+        const bookingDates={};for(const row of state.reservations)if(row.userId===actorId&&active(row))bookingDates[row.date]=(bookingDates[row.date]||0)+1;
+        return { user: publicUser(user), identityHistory: state.identities.filter(x => x.userId === actorId).sort((a,b)=>b.submittedAt-a.submittedAt), serverNow: now, bookingWindow: bookingWindow(now),reminders:{bookingDates,unreadCount:state.notifications.filter(x=>x.userId===actorId&&!x.readAt).length} };
+      }
+      if(action==='notification.mine')return state.notifications.filter(x=>x.userId===actorId).sort((a,b)=>b.createdAt-a.createdAt).map(x=>({...x}));
+      if(action==='notification.read'){
+        const notice=state.notifications.find(x=>x.id===input.id&&x.userId===actorId);
+        if(!notice)fail('NOT_FOUND','通知不存在',404);notice.readAt=notice.readAt||now;return {...notice};
+      }
+      if(action==='notification.readReservation'){
+        const row=findReservation();if(row.userId!==actorId)fail('FORBIDDEN','只能阅读本人的预约通知',403);
+        let readCount=0;for(const notice of state.notifications)if(notice.userId===actorId&&notice.reservationId===row.id&&!notice.readAt){notice.readAt=now;readCount++;}
+        return {readCount};
+      }
+      if(action==='profile.updateAvatar'){
+        // 归属来自登录会话；不接收姓名、身份、权限或其他用户ID的修改。
+        user.avatarUrl=avatar(input.avatarUrl);user.avatarUpdatedAt=now;
+        audit(user.id,'profile.updateAvatar');
+        return publicUser(user);
+      }
       // 已登录但未核验的用户也可以反馈使用问题；归属只取可信会话。
       if (action === 'feedback.mine') return state.feedback.filter(x => x.userId === actorId).sort((a,b)=>b.createdAt-a.createdAt).map(feedbackView);
       if (action === 'feedback.submit') {
@@ -108,11 +149,44 @@ function createService(db, { clock = Date.now } = {}) {
         return record;
       }
       if (action.startsWith('admin.')) admin(); else verified();
+      const blockView=block=>({...block,createdByName:state.users.find(x=>x.id===block.createdBy)?.name||'负责人',releasedByName:state.users.find(x=>x.id===block.releasedBy)?.name||'',canRelease:liveBlock(block,now),statusText:block.status==='released'?'已解除':block.endAt<=now?'已结束':block.startAt>now?'已安排':'停用中'});
+      if(action==='admin.rooms')return {serverNow:now,bookingWindow:bookingWindow(now),rooms:state.rooms.map(room=>({...room,blocks:state.blocks.filter(x=>x.roomId===room.id).sort((a,b)=>b.createdAt-a.createdAt).map(blockView)}))};
+      if(action==='admin.roomBlockPreview'||action==='admin.roomBlockCreate'){
+        const room=state.rooms.find(x=>x.id===input.roomId);if(!room)fail('NOT_FOUND','会议室不存在',404);
+        const requestId=action==='admin.roomBlockCreate'?text(input.requestId,'请求标识',100,8):null;
+        const previous=requestId&&state.blocks.find(x=>x.requestId===requestId&&x.createdBy===actorId);
+        const time=blockRange(input,previous?-Infinity:now),reason=text(input.reason,'停用原因',200);
+        const fingerprint=hash(JSON.stringify({roomId:room.id,...time,reason}));
+        if(previous){if(previous.fingerprint!==fingerprint)fail('IDEMPOTENCY_MISMATCH','同一请求标识不能用于不同停用安排',409);return {...blockView(previous),replayed:true};}
+        if(state.blocks.some(x=>liveBlock(x,now)&&x.roomId===room.id&&time.startAt<x.endAt&&time.endAt>x.startAt))fail('CONFLICT','该区间已有停用安排，请先查看现有记录',409);
+        const affected=state.reservations.filter(x=>active(x)&&x.roomId===room.id&&time.startAt<x.endAt&&time.endAt>x.startAt).sort((a,b)=>a.id.localeCompare(b.id));
+        const previewVersion=hash(JSON.stringify({fingerprint,affected:affected.map(x=>[x.id,x.status,x.startAt,x.endAt])}));
+        if(action==='admin.roomBlockPreview')return {previewVersion,roomId:room.id,...time,reason,affected:affected.map(view)};
+        if(input.previewVersion!==previewVersion)fail('PREVIEW_CHANGED','预约情况已变化，请重新预览并确认停用',409);
+        const block={id:randomUUID(),roomId:room.id,...time,reason,requestId,fingerprint,status:'active',createdBy:actorId,createdAt:now,cancelledCount:affected.length};
+        for(const row of affected){
+          Object.assign(row,{status:'cancelled',cancelledBy:actorId,cancelledAt:now,reason,cancellationType:'room-block',blockId:block.id});
+          state.notifications.push({id:randomUUID(),userId:row.userId,reservationId:row.id,type:'room-block-cancelled',content:row.roomId+'会议室 '+row.date+' '+row.start+'—'+row.end+' 的预约因会议室停用已取消。原因：'+reason,createdAt:now,readAt:null});
+          audit(row.id,'reservation.roomBlockCancel',reason);
+        }
+        state.blocks.push(block);audit(block.id,'room.block.create',reason);return blockView(block);
+      }
+      if(action==='admin.roomBlockRelease'){
+        const block=state.blocks.find(x=>x.id===input.id);if(!block)fail('NOT_FOUND','停用安排不存在',404);
+        if(!liveBlock(block,now))fail('STATE','该停用已结束或解除，请刷新',409);
+        const reason=text(input.reason,'恢复原因',200);
+        Object.assign(block,{status:'released',releasedAt:now,releasedBy:actorId,releaseReason:reason});audit(block.id,'room.block.release',reason);return blockView(block);
+      }
       if (action === 'rooms.list' || action === 'rooms.detail') {
         const day = date(input.date);
         const selected = action === 'rooms.detail' ? state.rooms.filter(x => x.id === input.roomId) : state.rooms;
         if (!selected.length) fail('NOT_FOUND', '会议室不存在', 404);
-        const result = selected.map(room => ({ ...room, occupied: state.reservations.filter(x => x.roomId === room.id && x.date === day && active(x)).sort((a,b)=>a.startAt-b.startAt).map(x => ({ start: x.start, end: x.end, label: '已占用' })) }));
+        const dayStart=Date.parse(day+'T08:00:00+08:00'),dayEnd=Date.parse(day+'T22:00:00+08:00');
+        const hhmm=at=>new Date(at+8*3600000).toISOString().slice(11,16);
+        const result = selected.map(room => ({ ...room, occupied: [
+          ...state.reservations.filter(x => x.roomId === room.id && x.date === day && active(x)).map(x => ({ start: x.start, end: x.end, label: '已占用' })),
+          ...state.blocks.filter(x=>liveBlock(x,now)&&x.roomId===room.id&&x.startAt<dayEnd&&x.endAt>dayStart).map(x=>({start:hhmm(Math.max(dayStart,x.startAt)),end:hhmm(Math.min(dayEnd,x.endAt)),label:'停用'}))
+        ].sort((a,b)=>a.start.localeCompare(b.start)) }));
         return action === 'rooms.detail' ? result[0] : result;
       }
       if (action === 'reservation.create') {
@@ -149,9 +223,19 @@ function createService(db, { clock = Date.now } = {}) {
       if (action === 'reservation.cancel') {
         const row = findReservation();
         if (row.userId !== actorId) fail('FORBIDDEN', '只能取消本人的预约', 403);
-        if (!active(row) || row.startAt <= now) fail('STATE', '仅能取消尚未开始的有效预约', 409);
+        if (!active(row)) fail('STATE', '仅能取消待确认或预约成功的有效预约', 409);
+        if (row.startAt - now < CANCELLATION_LEAD) fail('CANCELLATION_CUTOFF', '须至少提前5小时取消预约；距会议开始不足5小时，请联系曹闯老师处理，QQ：28061535', 409);
         Object.assign(row, { status: 'cancelled', cancelledBy: actorId, cancelledAt: now, reason: '本人取消' });
         audit(row.id, 'reservation.cancel');
+        return view(row);
+      }
+      if (action === 'admin.cancelReservation') {
+        const row = findReservation();
+        if (!active(row)) fail('STATE', '该预约已结束或已处理，不能重复取消', 409);
+        const reason=text(input.reason,'取消原因',200);
+        Object.assign(row,{status:'cancelled',cancelledBy:actorId,cancelledAt:now,reason,cancellationType:'admin'});
+        state.notifications.push({id:randomUUID(),userId:row.userId,reservationId:row.id,type:'admin-cancelled',content:row.roomId+'会议室 '+row.date+' '+row.start+'—'+row.end+' 的预约已由管理员取消。原因：'+reason,createdAt:now,readAt:null});
+        audit(row.id,'admin.cancelReservation',reason);
         return view(row);
       }
       if (action === 'admin.dashboard') return { reservations: state.reservations.filter(x=>x.status==='pending').length, identities: state.identities.filter(x=>x.status==='pending').length, feedback: state.feedback.filter(x=>x.status==='pending').length, total: state.reservations.length };
@@ -187,6 +271,7 @@ function createService(db, { clock = Date.now } = {}) {
           conflict(state, row, row.id);
         }
         Object.assign(row, { status: input.decision === 'approve' ? 'approved' : 'rejected', reviewedBy: actorId, reviewedAt: now, reason });
+        notifyReservation(row,'reservation-'+row.status,row.status==='approved'?'的申请已审核通过，预约成功。请在预约详情查看会议室密码。':'的申请未通过审核。原因：'+reason);
         audit(row.id, 'reservation.' + input.decision, reason);
         return view(row);
       }

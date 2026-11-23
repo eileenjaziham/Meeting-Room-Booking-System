@@ -1,1 +1,2 @@
 .banner{font-size:20rpx;color:#92691b;background:#fff3d8;text-align:center;padding:10rpx 14rpx;line-height:1.5}.cloud{background:#e8f4ff;color:#3371b2}
+.banner{font-size:22rpx;line-height:1.6;color:var(--ui-warning,#965b12);background:var(--ui-warning-soft,#fff4dd)}.cloud{color:var(--ui-primary,#2563eb);background:var(--ui-primary-soft,#edf3ff)}

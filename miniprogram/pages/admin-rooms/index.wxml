@@ -1,0 +1,34 @@
+<mode-banner />
+<view class="page manage-page">
+ <view class="title">会议室管理</view><view class="muted intro">选择会议室，安排停用或解除停用。</view>
+ <feedback-state wx:if="{{loading}}" kind="loading" title="正在读取会议室" />
+ <view wx:if="{{rooms.length}}" class="card room-picker">
+  <view class="section-heading"><text class="subtitle">选择会议室</text><text class="muted">共 {{rooms.length}} 间</text></view>
+  <view class="room-list"><view wx:for="{{rooms}}" wx:key="id" data-id="{{item.id}}" bindtap="select" hover-class="room-option-pressed" class="room-option {{selected.id === item.id ? 'chosen' : ''}}" role="button" aria-label="{{item.number}}会议室，{{item.capacity}}人，{{item.blockCount ? '有停用安排' : '正常开放'}}" aria-pressed="{{selected.id === item.id}}">
+   <view class="room-number">{{item.number}}</view><view class="room-info"><view class="room-capacity">容纳 {{item.capacity}} 人</view><view class="room-equipment">{{item.equipment}}</view></view><view class="room-state {{item.blockCount ? 'scheduled' : ''}}">{{item.blockCount ? item.blockCount + ' 项停用' : '正常开放'}}</view><image class="room-arrow" src="{{selected.id === item.id ? '/assets/icons/check.svg' : '/assets/icons/chevron.svg'}}" mode="aspectFit" aria-hidden="true" />
+  </view></view>
+ </view>
+ <view id="manage-form"></view>
+ <block wx:if="{{selected}}">
+  <view class="card block-form">
+   <view class="section-heading"><text class="subtitle">安排停用</text><text class="selected-room">{{selected.number}} 会议室</text></view><view class="muted room-location">{{selected.location}} · 固定容量 {{selected.capacity}} 人</view>
+   <view class="date-fields">
+    <view class="manage-field"><text class="label">开始日期</text><picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{startDateIndex}}" data-field="startDate" bindchange="changeDate" disabled="{{busy}}" aria-label="选择停用开始日期"><view class="manage-control"><image class="control-icon" src="/assets/icons/calendar.svg" mode="aspectFit" /><text class="control-value">{{startDateLabel}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>
+    <view class="manage-field"><text class="label">结束日期</text><picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{endDateIndex}}" data-field="endDate" bindchange="changeDate" disabled="{{busy}}" aria-label="选择停用结束日期"><view class="manage-control"><image class="control-icon" src="/assets/icons/calendar.svg" mode="aspectFit" /><text class="control-value">{{endDateLabel}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>
+   </view>
+   <view class="time-fields">
+    <view class="manage-field"><text class="label">开始时间</text><picker mode="selector" range="{{startOptions}}" value="{{startIndex}}" data-field="start" bindchange="changeTime" disabled="{{busy}}" aria-label="选择停用开始时间"><view class="manage-control"><image class="control-icon" src="/assets/icons/clock.svg" mode="aspectFit" /><text class="control-value time-value">{{start}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>
+    <view class="manage-field"><text class="label">结束时间</text><picker mode="selector" range="{{endOptions}}" value="{{endIndex}}" data-field="end" bindchange="changeTime" disabled="{{busy}}" aria-label="选择停用结束时间"><view class="manage-control"><image class="control-icon" src="/assets/icons/clock.svg" mode="aspectFit" /><text class="control-value time-value">{{end}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>
+   </view>
+   <form-field name="blockReason" label="停用原因" value="{{reason}}" required="{{true}}" multiline="{{true}}" maxlength="200" disabled="{{busy}}" placeholder="例如设备检修、临时维护" helper="确认前可预览受影响预约；停用将通知相关预约人。" bind:change="field" />
+   <view wx:if="{{error}}" class="error">{{error}}</view>
+   <button class="secondary action-button" bindtap="preview" disabled="{{busy}}" loading="{{busy}}">预览受影响预约</button>
+   <view wx:if="{{preview}}" class="preview"><view class="preview-heading"><text>停用影响预览</text><text class="impact-count">{{preview.affected.length}} 条预约</text></view><view class="notice">确认后将取消以下预约，并发送站内通知。解除停用不会恢复原预约。</view><view wx:if="{{!preview.affected.length}}" class="muted">该时段暂无受影响预约。</view><view wx:for="{{preview.affected}}" wx:key="id" class="affected"><view class="affected-heading"><text>{{item.borrowerName || item.applicantName}}</text><status-tag status="{{item.status}}" label="{{item.statusText}}" /></view><view class="muted">{{item.date}}　{{item.start}}—{{item.end}}</view></view><button class="danger action-button" bindtap="confirm" disabled="{{busy}}">确认停用 {{selected.number}} 会议室</button></view>
+  </view>
+  <view id="block-history" class="card history-card"><view class="section-heading"><text class="subtitle">停用与恢复记录</text><text class="muted">{{selected.blocks.length}} 条</text></view><view wx:if="{{!selected.blocks.length}}" class="history-empty">暂无停用记录</view>
+   <view wx:for="{{selected.blocks}}" wx:key="id" class="block-record"><view class="record-heading"><text class="block-status {{item.canRelease ? 'is-active' : ''}}">{{item.statusText}}</text><text class="record-actor">{{item.createdByName}}</text></view><view class="record-period"><view>{{item.startDate}}　{{item.start}}</view><view class="muted">至 {{item.endDate}}　{{item.end}}</view></view><view class="record-reason">{{item.reason}}</view><view class="muted">已取消 {{item.cancelledCount}} 条预约</view><view wx:if="{{item.releaseReason}}" class="release-note">恢复原因：{{item.releaseReason}}<view class="muted">处理人：{{item.releasedByName}}</view></view><button wx:if="{{item.canRelease}}" class="secondary action-button" data-id="{{item.id}}" bindtap="release" disabled="{{busy}}">解除停用</button></view>
+  </view>
+ </block>
+ <view wx:elif="{{rooms.length}}" class="muted choose-note">选择上方会议室后，可安排停用并查看历史记录。</view>
+ <feedback-state wx:if="{{!loading && error && !selected}}" kind="error" title="暂时无法读取会议室" description="{{error}}" action-label="重新加载" bind:action="load" />
+</view>

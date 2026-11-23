@@ -1,0 +1,4 @@
+<view wx:if="{{room}}" class="room-card" bindtap="open" role="button" aria-label="{{room.number}}会议室，容量{{room.capacity}}人，{{statusText}}，查看日程" hover-class="room-pressed" hover-start-time="0" hover-stay-time="100">
+ <view class="room-main"><image class="room-thumb" src="{{room.photo || '/assets/meeting.png'}}" mode="aspectFill" lazy-load="{{true}}" aria-label="会议室原型示意图" /><view class="room-content"><view class="room-heading"><text class="room-number">{{room.number}}</text><text class="room-unit">会议室</text></view><view class="room-meta">容纳 {{room.capacity}} 人</view><view class="room-equipment">{{room.equipment}}</view></view><image class="room-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" /></view>
+ <view class="room-schedule"><text class="room-state {{statusTone}}">{{statusText}}</text><schedule-bar occupied="{{room.occupied}}" /></view>
+</view>

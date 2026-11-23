@@ -15,10 +15,10 @@
     <button class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">提交反馈</button>
   </view>
   <block wx:elif="{{user && tab === 'mine'}}">
-    <view wx:if="{{loading}}" class="empty">正在读取反馈…</view>
-    <view wx:elif="{{!records.length && !error}}" class="empty">暂无反馈记录，欢迎提出你的建议</view>
+    <feedback-state wx:if="{{loading}}" kind="loading" title="正在读取反馈" />
+    <feedback-state wx:elif="{{!records.length && !error}}" title="暂无反馈记录" description="可切换上方“意见反馈”，提交你的问题或建议。" />
     <view wx:for="{{records}}" wx:key="id" class="card feedback-record">
-      <view class="row"><text class="subtitle">{{item.categoryText}}</text><text class="badge {{item.status === 'pending' ? 'pending' : 'approved'}}">{{item.statusText}}</text></view>
+      <view class="row"><text class="subtitle">{{item.categoryText}}</text><status-tag status="{{item.status === 'pending' ? 'pending' : 'approved'}}" label="{{item.statusText}}" /></view>
       <view class="feedback-content">{{item.content}}</view><view class="muted small">{{item.createdText}} · 北京时间</view>
       <view wx:if="{{item.reply}}" class="reply"><view class="reply-title">管理员回复</view><view class="feedback-content">{{item.reply}}</view><view class="muted small">{{item.repliedText}}</view></view>
       <view wx:else class="muted pending-hint">反馈已收到，等待负责人处理</view>

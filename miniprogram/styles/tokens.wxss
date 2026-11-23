@@ -1,0 +1,12 @@
+page{
+ --ui-primary:#2563eb;--ui-primary-soft:#edf3ff;--ui-primary-pressed:#e1eaff;
+ --ui-surface:#fff;--ui-background:#edf4fc;--ui-field:#f6f8fc;--ui-border:#dfe7f2;
+ --ui-text:#24364b;--ui-text-muted:#52647a;--ui-text-secondary:#607187;
+ --ui-success:#167348;--ui-success-soft:#eaf7ef;--ui-warning:#965b12;--ui-warning-soft:#fff4dd;
+ --ui-danger:#b42337;--ui-danger-soft:#fff0f2;--ui-neutral:#59687b;--ui-neutral-soft:#eef2f6;
+ --ui-disabled:#e8edf4;--ui-disabled-text:#7a889b;
+ --ui-radius-card:24rpx;--ui-radius-control:16rpx;--ui-radius-button:18rpx;
+ --ui-space-1:8rpx;--ui-space-2:12rpx;--ui-space-3:16rpx;--ui-space-4:24rpx;--ui-space-5:32rpx;--ui-space-6:40rpx;
+ --ui-font-title:36rpx;--ui-font-heading:32rpx;--ui-font-body:30rpx;--ui-font-label:26rpx;--ui-font-caption:24rpx;
+ --ui-shadow-card:0 6rpx 22rpx rgba(36,65,106,.055);--ui-control-height:96rpx;--ui-motion-fast:120ms;
+}

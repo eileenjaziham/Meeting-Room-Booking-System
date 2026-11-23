@@ -7,7 +7,9 @@
   <view wx:elif="{{!user}}" class="card"><button class="primary" bindtap="login">登录后查看</button></view>
   <block wx:else>
     <view class="card info-card">
-      <view class="kv"><text>姓名</text><text>{{profile.name || '未填写'}}</text></view>
+      <view class="avatar-row"><view><view>个人头像</view><view class="muted">点击头像更换</view></view><button class="info-avatar-button" open-type="chooseAvatar" bindchooseavatar="chooseAvatar" disabled="{{avatarBusy}}" aria-label="更换我的头像"><image class="info-avatar-image {{user.avatarUrl ? 'info-avatar-custom' : ''}}" src="{{user.avatarUrl || '/assets/icons/profile.svg'}}" mode="{{user.avatarUrl ? 'aspectFill' : 'aspectFit'}}" /></button></view>
+      <view wx:if="{{avatarBusy}}" class="muted">正在保存头像…</view>
+      <view class="kv"><text>姓名（不可修改）</text><text>{{profile.name || '未填写'}}</text></view>
       <view class="kv"><text>{{profile.identityType === 'teacher' ? '工号' : '学号'}}</text><text>{{profile.studentNo || '未填写'}}</text></view>
       <view class="kv"><text>身份类型</text><text>{{profile.identityType === 'teacher' ? '教师' : profile.identityType === 'student' ? '学生' : '未填写'}}{{user.verification !== 'approved' && profile.identityType ? '（申请中，尚未生效）' : ''}}</text></view>
       <view class="kv"><text>联系电话</text><text>{{profile.phone || '未填写'}}</text></view>

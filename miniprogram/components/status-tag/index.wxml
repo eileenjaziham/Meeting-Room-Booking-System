@@ -1,0 +1,1 @@
+<text class="tag {{status}}" aria-label="{{label || fallbackLabel}}">{{label || fallbackLabel}}</text>

@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.*
+!.env.example
 data/
 coverage/
 project.private.config.json
@@ -7,3 +9,4 @@ certs/
 *.log
 artifacts/
 .tools/
+.agents/

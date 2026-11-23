@@ -1,0 +1,12 @@
+<view class="selector">
+ <text class="field-label">预约日期 <text class="field-note">含今天共7天</text></text>
+ <picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{dateIndex}}" bindchange="date" disabled="{{disabled}}" aria-label="选择预约日期"><view class="date-control {{disabled ? 'disabled' : ''}}"><image class="control-icon" src="/assets/icons/calendar.svg" mode="aspectFit" aria-hidden="true" /><text class="date-value">{{dateLabel}}</text><image class="chevron" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" /></view></picker>
+ <view class="schedule"><schedule-bar occupied="{{occupied}}" detail="{{true}}" selected-start="{{start}}" selected-end="{{end}}" /></view>
+ <view wx:if="{{isToday && hasAvailable}}" class="hint">今天仅可选当前时间之后的空闲时段，最早可选 {{earliestStart}}（北京时间）。</view>
+ <view wx:if="{{hasAvailable}}" class="time-grid">
+  <view class="time-cell"><text class="field-label">开始时间</text><picker mode="multiSelector" range="{{startWheel.range}}" value="{{startWheel.value}}" data-field="start" bindcolumnchange="column" bindchange="time" bindcancel="cancel" disabled="{{disabled}}" aria-label="分别滚动小时和分钟，选择空闲开始时间"><view class="time-control {{disabled ? 'disabled' : ''}}"><image class="control-icon" src="/assets/icons/clock.svg" mode="aspectFit" aria-hidden="true" /><text class="time-value">{{start}}</text><image class="chevron" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" /></view></picker></view>
+  <view class="time-cell"><text class="field-label">结束时间</text><picker mode="multiSelector" range="{{endWheel.range}}" value="{{endWheel.value}}" data-field="end" bindcolumnchange="column" bindchange="time" bindcancel="cancel" disabled="{{disabled}}" aria-label="分别滚动小时和分钟，选择同一空闲区间的结束时间"><view class="time-control {{disabled ? 'disabled' : ''}}"><image class="control-icon" src="/assets/icons/clock.svg" mode="aspectFit" aria-hidden="true" /><text class="time-value">{{end}}</text><image class="chevron" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" /></view></picker></view>
+ </view>
+ <view wx:else class="no-time">当日已无可预约时间，请选择其他日期。</view>
+ <view class="helper">小时、分钟分别滚动；分钟每5分钟一档，仅显示空闲时间，结束时间不能跨过已预约时段。</view>
+</view>

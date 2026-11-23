@@ -12,7 +12,7 @@ function createHttpServer(service, { devLogin = false, driver = 'unknown', logge
       if (req.method === 'GET' && req.url === '/health') return send(200, { ok: true, mode: 'local-development', database: driver, devLogin });
       if (req.method !== 'POST' || !['/api','/dev/login'].includes(req.url)) throw new BusinessError('NOT_FOUND', '接口不存在', 404);
       const chunks = []; let bytes = 0;
-      for await (const chunk of req) { bytes += chunk.length; if (bytes > 32768) throw new BusinessError('PAYLOAD_TOO_LARGE', '请求过大', 413); chunks.push(chunk); }
+      for await (const chunk of req) { bytes += chunk.length; if (bytes > 96*1024) throw new BusinessError('PAYLOAD_TOO_LARGE', '请求过大', 413); chunks.push(chunk); }
       let body;
       try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { throw new BusinessError('VALIDATION','请求须为 JSON'); }
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new BusinessError('VALIDATION','请求须为 JSON 对象');

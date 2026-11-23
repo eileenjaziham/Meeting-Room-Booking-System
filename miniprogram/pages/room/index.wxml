@@ -1,14 +1,13 @@
 <mode-banner />
 <view class="page">
-  <view class="error" wx:if="{{error}}">{{error}}<view class="link" bindtap="load">刷新日程</view></view>
-  <view wx:if="{{loading}}" class="empty">加载会议室日程…</view>
+  <view class="error" wx:if="{{error && !room}}">{{error}}<view class="link" bindtap="load">刷新日程</view></view>
+  <feedback-state wx:if="{{loading && !room}}" kind="loading" title="正在加载会议室日程" />
   <block wx:if="{{room}}">
     <view class="card room-photo"><image src="{{room.photo}}" mode="aspectFill" /><view class="photo-note">{{room.photoNote}}</view></view>
     <view class="card"><view class="title">{{room.number}} 会议室</view><view class="kv"><text>位置</text><text>{{room.location}}</text></view><view class="kv"><text>容量</text><text>{{room.capacity}} 人</text></view><view class="kv"><text>设备</text><text>{{room.equipment}}</text></view><view class="kv"><text>开放时间</text><text>{{room.open}}</text></view></view>
-    <view class="card"><view class="subtitle">选择预约日期与时间</view><text class="label">预约日期（含今天共 7 天）</text><picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{dateIndex}}" bindchange="changeDate"><view class="picker">{{dateLabel}}　⌄</view></picker>
-      <schedule-bar occupied="{{room.occupied}}" detail="{{true}}" />
-      <view class="time-row"><view><text class="label">开始时间</text><picker mode="time" value="{{start}}" start="08:00" end="21:59" data-field="start" bindchange="changeTime"><view class="picker">{{start}} ⌄</view></picker></view><text>—</text><view><text class="label">结束时间</text><picker mode="time" value="{{end}}" start="08:01" end="22:00" data-field="end" bindchange="changeTime"><view class="picker">{{end}} ⌄</view></picker></view></view>
-      <view class="muted">可按任意分钟选择，例如 14:30—17:50。日程查询不锁定时段，提交时由服务器重新校验。</view><button class="primary" bindtap="next">填写预约信息</button>
+    <view class="card"><view class="subtitle">选择预约日期与时间</view>
+      <time-selector date-options="{{dateOptions}}" date-index="{{dateIndex}}" date-label="{{dateLabel}}" start-options="{{startOptions}}" end-options="{{endOptions}}" start-index="{{startIndex}}" end-index="{{endIndex}}" start="{{start}}" end="{{end}}" occupied="{{room.occupied}}" disabled="{{loading}}" has-available="{{hasAvailable}}" is-today="{{isToday}}" earliest-start="{{earliestStart}}" bind:datechange="changeDate" bind:timechange="changeTime" />
+      <view class="error" wx:if="{{error}}">{{error}}</view><button class="primary" bindtap="next" loading="{{loading}}" disabled="{{loading || !hasAvailable}}">填写预约信息</button>
     </view>
   </block>
   <manager-contact />

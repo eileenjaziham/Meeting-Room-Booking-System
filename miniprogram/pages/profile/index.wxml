@@ -1,21 +1,23 @@
 <mode-banner />
 <view class="page profile-page">
   <view class="card profile-header">
-    <view class="avatar"><image src="/assets/icons/profile.svg" mode="aspectFit" /></view>
+    <view class="avatar-shell">
+      <button wx:if="{{user}}" class="avatar-button" open-type="chooseAvatar" bindchooseavatar="chooseAvatar" disabled="{{avatarBusy}}" aria-label="更换我的头像"><image class="avatar-image {{user.avatarUrl ? 'custom-avatar' : ''}}" src="{{user.avatarUrl || '/assets/icons/profile.svg'}}" mode="{{user.avatarUrl ? 'aspectFill' : 'aspectFit'}}" /><view class="avatar-camera"><image class="camera-image" src="/assets/icons/camera.svg" mode="aspectFit" /></view></button>
+      <view wx:else class="avatar-placeholder"><image class="avatar-image" src="/assets/icons/profile.svg" mode="aspectFit" /></view>
+    </view>
     <view class="profile-heading">
-      <view class="title">{{user.name || '我的'}}</view>
-      <view wx:if="{{user}}" class="muted">{{user.verification === 'approved' ? (user.identityType === 'teacher' ? '已核验教师' : '已核验学生') : '身份待核验'}}{{user.isAdmin ? ' · 授权负责人' : ''}}</view>
-      <text wx:else class="link" bindtap="login">点击登录</text>
+      <view class="profile-name">{{user.name || '我的'}}</view>
+      <block wx:if="{{user}}"><view class="profile-badges"><text class="identity-tag">{{user.verification === 'approved' ? (user.identityType === 'teacher' ? '已核验教师' : '已核验学生') : '身份待核验'}}</text><text wx:if="{{user.isAdmin}}" class="identity-tag">授权负责人</text></view><view class="avatar-note">{{avatarBusy ? '正在保存头像…' : '轻触头像，换一张喜欢的照片'}}</view></block>
+      <text wx:else class="profile-login" bindtap="login">点击登录　›</text>
     </view>
   </view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
   <view class="card menu-card">
-    <view class="profile-menu-row" bindtap="personalInfo" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/profile.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">个人信息</view><view class="menu-description">姓名、学号与联系方式</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
-    <view class="profile-menu-row" bindtap="bookings" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/calendar.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">我的预约</view><view class="menu-description">预约记录与审核进度</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
-    <view class="profile-menu-row" bindtap="feedback" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/feedback.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">反馈中心</view><view class="menu-description">意见建议与处理回复</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
-    <view class="profile-menu-row" bindtap="notices" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/notices.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">预约须知</view><view class="menu-description">预约规则与管理员联系</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
-    <view wx:if="{{user.isAdmin}}" class="profile-menu-row" bindtap="admin" hover-class="row-pressed" role="button"><view class="icon-box"><image src="/assets/icons/admin.svg" mode="aspectFit" /></view><view class="menu-copy"><view class="menu-title">管理工作台</view><view class="menu-description">申请审核与预约管理</view></view><image class="menu-arrow" src="/assets/icons/chevron.svg" /></view>
+    <view class="profile-menu-row" bindtap="personalInfo" hover-class="row-pressed" role="button"><view class="icon-box"><image class="menu-icon" src="/assets/icons/profile.svg" mode="aspectFit" /></view><text class="menu-title">个人信息</text><image class="menu-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" /></view>
+    <view class="profile-menu-row" bindtap="bookings" hover-class="row-pressed" role="button" aria-label="我的预约，{{unreadCount}}条未读消息"><view class="icon-box"><image class="menu-icon" src="/assets/icons/calendar.svg" mode="aspectFit" /></view><text class="menu-title">我的预约</text><view wx:if="{{unreadCount}}" class="message-reminder"><view class="reminder-dot"></view><text>{{unreadCount > 99 ? '99+' : unreadCount}}条未读</text></view><image class="menu-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" /></view>
+    <view class="profile-menu-row" bindtap="feedback" hover-class="row-pressed" role="button"><view class="icon-box"><image class="menu-icon" src="/assets/icons/feedback.svg" mode="aspectFit" /></view><text class="menu-title">反馈中心</text><image class="menu-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" /></view>
+    <view class="profile-menu-row" bindtap="notices" hover-class="row-pressed" role="button"><view class="icon-box"><image class="menu-icon" src="/assets/icons/notices.svg" mode="aspectFit" /></view><text class="menu-title">预约须知</text><image class="menu-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" /></view>
   </view>
-  <view wx:if="{{user}}" class="switch-account" bindtap="logout" role="button" hover-class="row-pressed">切换登录账号</view>
-  <view class="app-version"><view>会议室预约</view><view>当前版本 v{{version}}</view></view>
+  <view wx:if="{{user}}" class="switch-account" bindtap="logout" role="button" hover-class="row-pressed"><image class="switch-icon" src="/assets/icons/switch-account.svg" mode="aspectFit" /><text>切换账号</text></view>
+  <view class="app-version"><text>会议室预约</text><text class="version-divider">·</text><text>当前版本 v{{version}}</text></view>
 </view>

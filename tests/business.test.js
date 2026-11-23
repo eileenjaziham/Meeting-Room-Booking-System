@@ -18,10 +18,39 @@ test('学生待确认也阻塞教师重叠，拒绝释放',async()=>{const a=awa
 test('两个用户同时抢约仅一成功',async()=>{const results=await Promise.allSettled([call('student','reservation.create',payload()),call('teacher','reservation.create',payload())]);assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal(results.find(x=>x.status==='rejected').reason.code,'CONFLICT');});
 test('20 个并发竞争只产生一条有效预约',async()=>{const results=await Promise.allSettled(Array.from({length:20},(_,i)=>call(i%2?'student':'teacher','reservation.create',payload())));assert.equal(results.filter(x=>x.status==='fulfilled').length,1);});
 test('相同请求并发重试不重复，相同标识不同内容拒绝',async()=>{const p=payload();const results=await Promise.all([call('student','reservation.create',p),call('student','reservation.create',p)]);assert.equal(results[0].id,results[1].id);assert.equal(results[1].replayed,true);await rejected(call('student','reservation.create',{...p,purpose:'变更用途'}),'IDEMPOTENCY_MISMATCH');});
-test('取消后的幂等重试返回原记录，不重新占用',async()=>{const p=payload();const a=await call('teacher','reservation.create',p);await call('teacher','reservation.cancel',{id:a.id});const retry=await call('teacher','reservation.create',p);assert.equal(retry.id,a.id);assert.equal(retry.status,'cancelled');});
+test('取消后的幂等重试返回原记录，不重新占用',async()=>{const p=payload({start:'14:00',end:'15:00'});const a=await call('teacher','reservation.create',p);await call('teacher','reservation.cancel',{id:a.id});const retry=await call('teacher','reservation.create',p);assert.equal(retry.id,a.id);assert.equal(retry.status,'cancelled');assert.equal(retry.accessCode,undefined);});
 test('开始瞬间待确认失效、无需定时任务即可释放后续时段且不能审批',async()=>{const a=await call('student','reservation.create',payload());now=a.startAt;assert.equal((await call('student','reservation.detail',{id:a.id})).status,'expired');await rejected(call('admin','admin.reviewReservation',{id:a.id,decision:'approve'}),'STATE');assert.equal((await call('teacher','reservation.create',payload({start:'09:16'}))).status,'approved');});
 test('成功到结束瞬间完成，非签到证明',async()=>{const a=await call('teacher','reservation.create',payload());now=a.endAt;assert.equal((await call('teacher','reservation.detail',{id:a.id})).status,'completed');});
-test('开始前本人取消释放；开始瞬间成功预约不可取消',async()=>{const a=await call('student','reservation.create',payload());await call('student','reservation.cancel',{id:a.id});const b=await call('teacher','reservation.create',payload());now=b.startAt;await rejected(call('teacher','reservation.cancel',{id:b.id}),'STATE');});
+test('至少提前5小时本人取消释放；开始瞬间成功预约不可取消',async()=>{const a=await call('student','reservation.create',payload({start:'14:00',end:'15:00'}));await call('student','reservation.cancel',{id:a.id});const b=await call('teacher','reservation.create',payload());now=b.startAt;await rejected(call('teacher','reservation.cancel',{id:b.id}),'CANCELLATION_CUTOFF');});
+for(const user of ['student','teacher'])test(user+'取消边界：恰好5小时可取消，少1毫秒即拒绝',async()=>{
+ const a=await call(user,'reservation.create',payload({start:'14:00',end:'15:00'}));now=a.startAt-5*3600000;
+ const detail=await call(user,'reservation.detail',{id:a.id});assert.equal(detail.canCancel,true);assert.equal(detail.cancelDeadline,now);await call(user,'reservation.cancel',{id:a.id});
+ now=Date.parse('2030-06-01T07:00:00+08:00');const b=await call(user,'reservation.create',payload({start:'14:00',end:'15:00'}));now=b.startAt-5*3600000+1;
+ assert.equal((await call(user,'reservation.detail',{id:b.id})).canCancel,false);await rejected(call(user,'reservation.cancel',{id:b.id,isAdmin:true,now:0}),'CANCELLATION_CUTOFF');
+ assert.equal((await call(user,'reservation.detail',{id:b.id})).status,user==='teacher'?'approved':'pending');
+});
+test('管理员可在5小时内取消他人成功预约：原因、通知、审计与并发幂等',async()=>{
+ const a=await call('teacher','reservation.create',payload());now=a.startAt-60000;
+ assert.equal((await call('admin','admin.reservationDetail',{id:a.id})).canAdminCancel,true);
+ await rejected(call('teacher','admin.cancelReservation',{id:a.id,reason:'越权'}),'FORBIDDEN');await rejected(call('admin','admin.cancelReservation',{id:a.id,reason:' '}),'VALIDATION');
+ const results=await Promise.allSettled([1,2].map(()=>call('admin','admin.cancelReservation',{id:a.id,reason:'学院统一安排'})));assert.equal(results.filter(x=>x.status==='fulfilled').length,1);
+ const row=await call('teacher','reservation.detail',{id:a.id});assert.equal(row.status,'cancelled');assert.equal(row.reason,'学院统一安排');assert.equal(row.cancelledBy,'demo-admin');assert.equal(row.accessCode,undefined);
+ const notices=(await call('teacher','notification.mine')).filter(x=>x.reservationId===a.id);assert.equal(notices.length,1);assert.match(notices[0].content,/学院统一安排/);
+ await db.transact(s=>assert.equal(s.audit.filter(x=>x.objectId===a.id&&x.operation==='admin.cancelReservation').length,1));
+ await call('student','reservation.create',payload());
+});
+test('管理员可取消待确认或进行中的预约，不能取消终态',async()=>{
+ const pending=await call('student','reservation.create',payload());await call('admin','admin.cancelReservation',{id:pending.id,reason:'调整会议'});
+ const approved=await call('teacher','reservation.create',payload());now=approved.startAt;await call('admin','admin.cancelReservation',{id:approved.id,reason:'临时处理'});
+ const ended=await call('teacher','reservation.create',payload({start:'14:00',end:'15:00'}));now=ended.endAt;await rejected(call('admin','admin.cancelReservation',{id:ended.id,reason:'不能修改历史'}),'STATE');
+});
+test('密码仅在成功预约中返回：学生审批后可见，公开日程和终态不返回',async()=>{
+ const pending=await call('student','reservation.create',payload());assert.equal(pending.accessCode,undefined);
+ await call('admin','admin.reviewReservation',{id:pending.id,decision:'approve'});assert.equal((await call('student','reservation.detail',{id:pending.id})).accessCode,'70811234#');
+ await rejected(call('teacher','reservation.detail',{id:pending.id}),'FORBIDDEN');assert.ok(!JSON.stringify(await call('teacher','rooms.list',{date:pending.date})).includes('1234#'));
+ now=pending.endAt;assert.equal((await call('student','reservation.detail',{id:pending.id})).accessCode,undefined);
+});
+test('五间会议室成功后的密码按编号生成',async()=>{for(const roomId of ['7060','7081','7091','7119','7052']){const row=await call('teacher','reservation.create',payload({roomId}));assert.equal(row.accessCode,roomId+'1234#');}});
 test('拒绝必须填写原因，批准和拒绝并发只一次有效',async()=>{const a=await call('student','reservation.create',payload());await rejected(call('admin','admin.reviewReservation',{id:a.id,decision:'reject',reason:' '}),'VALIDATION');const results=await Promise.allSettled([call('admin','admin.reviewReservation',{id:a.id,decision:'approve'}),call('admin','admin.reviewReservation',{id:a.id,decision:'reject',reason:'已处理'})]);assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal((await call('student','reservation.detail',{id:a.id})).status,'approved');});
 test('批准时复核当前容量',async()=>{const a=await call('student','reservation.create',payload());await db.transact(s=>{s.rooms.find(x=>x.id==='7081').capacity=4;});try{await rejected(call('admin','admin.reviewReservation',{id:a.id,decision:'approve'}),'CAPACITY');}finally{await db.transact(s=>{s.rooms.find(x=>x.id==='7081').capacity=10;});}});
 test('普通用户不可越权查询详情/取消/台账/审核',async()=>{const a=await call('student','reservation.create',payload());for(const action of ['reservation.detail','reservation.cancel','admin.reservations','admin.reviewReservation','admin.identities','admin.reviewIdentity'])await rejected(call('teacher',action,{id:a.id,decision:'approve'}),'FORBIDDEN');});

@@ -4,6 +4,28 @@
 
 ## ADDED Requirements
 
+### Requirement: Administrator workbench on home
+系统 SHALL 在授权管理员首页按原型提供学生预约审核、预约台账、会议室管理三个顶部快捷入口；学生预约审核仅保留顶部一个入口。工作台提供用户审核和用户反馈，另显示预约统计；管理员首页不再堆放房间日历和列表。“我的”不放置管理工作台入口。普通师生保持原首页，不请求管理统计；从管理页面返回首页时刷新真实待办。
+
+#### Scenario: Administrator enters home
+- **WHEN** 已授权管理员进入首页
+- **THEN** 可直接查看管理待办并进入预约审核、台账、用户审核和反馈处理，会议室管理入口打开独立管理页
+
+#### Scenario: Switch back to student
+- **WHEN** 管理员切换为普通学生账号
+- **THEN** 首页清空管理统计并显示普通师生入口，不请求管理接口，伪造前端跳转仍不能取得后端管理权限
+
+### Requirement: Room suspension with impact preview
+系统 SHALL 仅允许授权负责人在独立会议室管理页查看五房固定资料、安排停用和解除停用。停用必须填写原因并先预览受影响预约；确认时重新核对预览版本，在同一事务中创建停用、取消重叠的待确认/成功预约、产生本人可读站内通知及管理日志。预览后预约变化须重新确认，失败整体回滚，重试不重复处理。
+
+#### Scenario: Confirm a suspension
+- **WHEN** 负责人预览并确认有受影响预约的停用
+- **THEN** 停用区间禁止创建重叠预约，受影响用户在“我的预约”看到取消通知及原因，非本人不能读取通知
+
+#### Scenario: Release and retain history
+- **WHEN** 负责人填写恢复原因并解除停用
+- **THEN** 区间重新可约，保留停用/恢复记录和操作者，已取消预约不恢复，历史已完成预约不变
+
 ### Requirement: Authorized atomic student review
 系统 SHALL 仅允许授权负责人审批仍未开始的待确认学生申请，批准时复核身份与容量，拒绝必须给出原因。
 

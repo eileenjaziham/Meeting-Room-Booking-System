@@ -20,6 +20,15 @@
 - **WHEN** 另一普通用户在本人反馈接口伪造userId
 - **THEN** 仍只返回该会话用户自己的反馈
 
+### Requirement: Personal avatar without name editing
+系统 SHALL 在“我的”和“个人信息”提供用户主动选择头像的入口，将压缩后的PNG/JPEG头像按当前可信会话保存并在重新登录后读取；姓名只读，头像接口不得修改姓名、学工号、身份、权限或其他账号资料。
+#### Scenario: Replace own avatar
+- **WHEN** 用户选择有效头像并保存
+- **THEN** 两个页面显示新头像，再次读取账号仍可见，取消或上传失败时保留原头像
+#### Scenario: Forged profile fields
+- **WHEN** 用户通过头像请求附带其他用户ID、姓名或管理员字段
+- **THEN** 仅更新当前登录账号头像，姓名及权限不变，其他账号头像不变
+
 ### Requirement: Authorized feedback response
 系统 SHALL 仅允许独立授权管理员查看待办和填写回复，用户可从本人反馈看到回复；空回复被拒绝。
 #### Scenario: Administrator responds

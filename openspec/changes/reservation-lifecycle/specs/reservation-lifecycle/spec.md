@@ -41,8 +41,37 @@
 - **THEN** 申请失效、不能批准且不再阻塞后续合法区间
 
 ### Requirement: Owner-only cancellation and history
-系统 SHALL 只允许本人查看普通预约详情，在开始前取消有效记录，终态保留历史且不恢复。
+系统 SHALL 只允许本人查看普通预约详情，距会议开始至少5小时才可自助取消待确认或成功预约；恰好5小时允许，不足5小时拒绝。终态保留历史且不恢复。
 
 #### Scenario: Cancel at exact start
 - **WHEN** 普通用户在成功预约开始瞬间申请取消
 - **THEN** 系统拒绝自助取消
+
+#### Scenario: Exact five-hour cutoff
+- **WHEN** 14:00开始的预约人在当天09:00取消
+- **THEN** 允许取消；09:00之后拒绝，服务端按北京时间重新校验
+
+### Requirement: Administrator cancellation
+系统 SHALL 允许独立授权管理员取消他人的有效预约，不受五小时限制；须填写取消原因，并在同一事务保存取消状态、本人通知与审计记录。终态不可重复取消。
+
+#### Scenario: Cancel an approved booking near start
+- **WHEN** 管理员在距会议开始不足5小时填写原因取消成功预约
+- **THEN** 释放时段、保留原因并通知预约人；普通用户不能调用此管理接口
+
+### Requirement: Approved booking room access code
+系统 SHALL 仅在成功预约的本人或授权管理员返回数据中展示会议室编号加1234#的密码，公开占用接口不返回密码；待确认和终态不返回密码。
+
+#### Scenario: Student approval reveals access code
+- **WHEN** 7081会议室的学生申请获批准
+- **THEN** 本人在结果页或详情可看到70811234#；取消或结束后不再返回密码
+
+### Requirement: Personal calendar and unread booking reminders
+系统 SHALL 在日历标记本人待确认或预约成功记录所在日期；审核通过、拒绝及到点未审核失效产生本人未读通知，管理员待办按真实待处理数量显示红点。已读状态 SHALL 持久化且仅预约人可清除。
+
+#### Scenario: Review result and read receipt
+- **WHEN** 学生预约获批且本人尚未查看结果
+- **THEN** 首页我的预约显示红点，查看对应详情后清除；管理员查看不清除学生未读状态
+
+#### Scenario: Active reminder refresh
+- **WHEN** 用户停留首页
+- **THEN** 每30秒只刷新提醒，离开停止，旧请求响应不能在离页后覆盖状态

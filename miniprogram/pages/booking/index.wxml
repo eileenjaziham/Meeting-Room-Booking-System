@@ -2,17 +2,19 @@
 <view class="page">
   <view class="title">填写预约信息</view>
   <view class="card"><view class="subtitle">{{roomId}} 会议室</view><view>{{dateLabel}}　{{start}}—{{end}}</view><view class="muted">北京时间 · 预约范围含今天共7天</view></view>
-  <view wx:if="{{loading}}" class="notice">正在读取预约资料…</view>
+  <view wx:if="{{slotConflict}}" class="card"><view class="error">所选时间与已有预约重叠，请重新选择空闲时段。</view><schedule-bar occupied="{{occupied}}" detail="{{true}}" /><button bindtap="changeTime">重新选择时间</button></view>
+  <feedback-state wx:if="{{loading}}" kind="loading" title="正在读取预约资料" />
   <view wx:elif="{{user}}" class="notice">{{user.identityType === 'teacher' ? '教师合法预约提交后直接成功。' : '学生提交后为待确认，并占用该时段；须由负责人审核。'}}</view>
-  <view class="error" wx:if="{{error}}">{{error}}<view wx:if="{{!ready}}" class="link" bindtap="load">重新加载预约资料</view></view>
+  <view class="error" wx:if="{{error && !ready}}">{{error}}<view class="link" bindtap="load">重新加载预约资料</view></view>
   <view class="card">
-    <label class="field"><text class="label">负责老师 *</text><input value="{{responsibleTeacher}}" data-field="responsibleTeacher" bindinput="field" maxlength="50" placeholder="请输入本次借用的负责老师姓名" /></label>
-    <label class="field"><text class="label">借用人 *</text><input value="{{borrowerName}}" data-field="borrowerName" bindinput="field" maxlength="50" placeholder="请输入实际借用人姓名" /></label>
-    <label class="field"><text class="label">使用用途 *</text><input value="{{purpose}}" data-field="purpose" bindinput="field" maxlength="200" placeholder="如：课程研讨、课题组会议" /></label>
-    <label class="field"><text class="label">预计人数 *{{capacity !== null ? '（容量 ' + capacity + ' 人）' : ''}}</text><input value="{{attendees}}" type="number" data-field="attendees" bindinput="field" maxlength="9" placeholder="正整数" /></label>
-    <label class="field"><text class="label">联系电话 *</text><input value="{{phone}}" type="number" data-field="phone" bindinput="field" maxlength="11" placeholder="11位手机号" /></label>
-    <label class="field"><text class="label">备注（选填）</text><textarea value="{{notes}}" data-field="notes" bindinput="field" maxlength="500" placeholder="补充使用说明" /></label>
+    <form-field name="responsibleTeacher" label="负责老师" required="{{true}}" value="{{responsibleTeacher}}" maxlength="50" placeholder="请输入本次借用的负责老师姓名" error="{{fieldErrors.responsibleTeacher}}" focus="{{focusField === 'responsibleTeacher'}}" disabled="{{busy || loading}}" bind:change="field" bind:blur="blur" />
+    <form-field name="borrowerName" label="借用人" required="{{true}}" value="{{borrowerName}}" maxlength="50" placeholder="请输入实际借用人姓名" error="{{fieldErrors.borrowerName}}" focus="{{focusField === 'borrowerName'}}" disabled="{{busy || loading}}" bind:change="field" bind:blur="blur" />
+    <form-field name="purpose" label="使用用途" required="{{true}}" value="{{purpose}}" maxlength="200" placeholder="如：课程研讨、课题组会议" error="{{fieldErrors.purpose}}" focus="{{focusField === 'purpose'}}" disabled="{{busy || loading}}" bind:change="field" bind:blur="blur" />
+    <form-field name="attendees" label="预计人数" required="{{true}}" value="{{attendees}}" type="number" stepper="{{true}}" max="{{capacity}}" maxlength="9" placeholder="人数" helper="{{capacity !== null ? '本会议室最多容纳 ' + capacity + ' 人' : ''}}" error="{{fieldErrors.attendees}}" focus="{{focusField === 'attendees'}}" disabled="{{busy || loading}}" bind:change="field" bind:blur="blur" />
+    <form-field name="phone" label="联系电话" required="{{true}}" value="{{phone}}" type="number" maxlength="11" placeholder="请输入11位手机号" error="{{fieldErrors.phone}}" focus="{{focusField === 'phone'}}" disabled="{{busy || loading}}" bind:change="field" bind:blur="blur" />
+    <form-field name="notes" label="备注（选填）" value="{{notes}}" multiline="{{true}}" maxlength="500" placeholder="补充使用说明" disabled="{{busy || loading}}" bind:change="field" />
     <view wx:if="{{!user && !loading}}" class="login-required" bindtap="login">登录后即可提交，点击返回登录页</view>
+    <view class="error" wx:if="{{error && ready}}">{{error}}<view wx:if="{{slotConflict}}" class="link" bindtap="changeTime">重新选择时间</view></view>
     <button class="primary submit-booking" loading="{{busy || loading}}" disabled="{{busy || loading}}" bindtap="submit">{{!user ? '登录后提交' : user.identityType === 'teacher' ? '提交预约' : '提交申请，等待审核'}}</button>
     <view class="muted submit-note">网络异常后可保持内容重试，系统会防止重复提交。也可在“我的预约”查看最终结果。</view>
   </view>

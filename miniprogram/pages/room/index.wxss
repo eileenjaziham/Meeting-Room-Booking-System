@@ -1,1 +1,2 @@
-.room-photo{padding:0;overflow:hidden}.room-photo image{width:100%;height:330rpx;display:block}.photo-note{padding:10rpx 20rpx;color:#8390a1;font-size:21rpx}.time-row{display:flex;align-items:center;gap:20rpx;margin:30rpx 0}.time-row>view{flex:1}.primary{margin-top:28rpx}
+.room-photo{padding:0;overflow:hidden}.room-photo image{width:100%;height:330rpx;display:block}.photo-note{padding:10rpx 20rpx;color:var(--ui-text-muted);font-size:21rpx}.time-row{display:flex;align-items:center;gap:20rpx;margin:30rpx 0}.time-row>view{flex:1}.primary{margin-top:28rpx}
+.today-hint{margin-top:20rpx;color:#8a6c38;background:#fff8ea;border-radius:12rpx;padding:14rpx 18rpx}

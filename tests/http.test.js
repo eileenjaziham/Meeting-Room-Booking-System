@@ -13,12 +13,21 @@ test('真实 HTTP + PostgreSQL：登录、会话权限、读房间、提交预�
     assert.equal((await post('/api',{action:'me',userId:'demo-admin'})).status,401);
     assert.equal((await post('/dev/login',null)).status,400);
     const student=(await post('/dev/login',{account:'demo-student'})).data.token;
+    const teacher=(await post('/dev/login',{account:'demo-teacher'})).data.token;
     const admin=(await post('/dev/login',{account:'demo-admin'})).data.token;
     assert.equal((await post('/api',{action:'admin.dashboard',payload:{isAdmin:true}},student)).status,403);
     assert.equal((await post('/api',{action:'rooms.list',payload:{date:'2035-01-02'}},student)).data.length,5);
     const payload={roomId:'7081',date:'2035-01-02',start:'14:30',end:'17:50',purpose:'HTTP 集成测试',responsibleTeacher:'测试负责老师',borrowerName:'测试借用人',attendees:5,phone:'13800000001',requestId:'http-test-request'};
     const a=await post('/api',{action:'reservation.create',payload},student);assert.equal(a.data.status,'pending');
+    // 绕过页面直接请求：待确认也占用；同一段、包含、被包含、首尾一分钟重叠全部拒绝。
+    for(const [index,[start,end]]of [['14:30','17:50'],['14:29','17:51'],['15:00','16:00'],['14:00','14:31'],['17:49','18:00']].entries()){
+      const blocked=await post('/api',{action:'reservation.create',payload:{...payload,start,end,requestId:'http-overlap-'+index}},teacher);
+      assert.equal(blocked.status,409);assert.equal(blocked.error.code,'CONFLICT');assert.match(blocked.error.message,/14:30—17:50/);
+    }
     const b=await post('/api',{action:'admin.reviewReservation',payload:{id:a.data.id,decision:'approve'}},admin);assert.equal(b.data.status,'approved');
+    const race=await Promise.all(Array.from({length:8},(_,i)=>post('/api',{action:'reservation.create',payload:{...payload,start:'17:49',end:'18:00',requestId:'http-race-'+i}},i%2?student:teacher)));
+    assert.ok(race.every(result=>result.status===409&&result.error.code==='CONFLICT'));
+    assert.equal((await post('/api',{action:'admin.reservations',payload:{roomId:'7081',date:payload.date}},admin)).data.length,1);
     const mine=await post('/api',{action:'reservation.mine'},student);assert.equal(mine.data.length,1);
     assert.equal((await post('/api',{action:'reservation.create',payload},student)).data.id,a.data.id);
   }finally{await new Promise(r=>server.close(r));await db.close();}

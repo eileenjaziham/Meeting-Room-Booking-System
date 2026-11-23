@@ -1,0 +1,4 @@
+<view class="state {{kind}}" aria-label="{{title}}">
+ <block wx:if="{{kind === 'loading'}}"><view wx:for="{{skeletons}}" wx:key="*this" class="skeleton" aria-hidden="true"><view class="skeleton-square"></view><view class="skeleton-copy"><view class="skeleton-line"></view><view class="skeleton-line short"></view></view></view><view class="state-description">{{title || '正在加载…'}}</view></block>
+ <block wx:else><view class="state-icon"><image class="state-image" src="{{kind === 'error' ? '/assets/icons/alert.svg' : kind === 'success' ? '/assets/icons/check.svg' : '/assets/icons/calendar.svg'}}" mode="aspectFit" aria-hidden="true" /></view><view class="state-title">{{title}}</view><view wx:if="{{description}}" class="state-description">{{description}}</view><button wx:if="{{actionLabel}}" class="state-action" bindtap="action" hover-class="state-action-pressed">{{actionLabel}}</button></block>
+</view>

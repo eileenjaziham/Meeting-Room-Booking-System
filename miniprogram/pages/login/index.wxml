@@ -1,5 +1,5 @@
 <mode-banner />
-<view class="login-brand"><image src="/assets/campus.png" mode="widthFix" /></view>
+<view class="login-brand"><image class="login-brand-image" src="/assets/campus.png" mode="widthFix" /></view>
 <view class="page login-page"><view class="title">欢迎登录</view><view class="login-subtitle">计算机学院会议室预约</view>
   <view class="card"><view class="subtitle">{{local ? '选择测试身份登录' : '微信会话登录'}}</view>
     <view class="error" wx:if="{{error}}">{{error}}</view>

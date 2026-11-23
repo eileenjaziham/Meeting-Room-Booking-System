@@ -32,6 +32,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS feedback_request ON feedback (user_id, (data->
 CREATE INDEX IF NOT EXISTS feedback_owner_status ON feedback (user_id, (data->>'status'));
 CREATE TABLE IF NOT EXISTS sessions (id text PRIMARY KEY, user_id text NOT NULL REFERENCES users(id), data jsonb NOT NULL);
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions (((data->>'expiresAt')::bigint));
+CREATE TABLE IF NOT EXISTS room_blocks (id text PRIMARY KEY,room_id text NOT NULL REFERENCES rooms(id),data jsonb NOT NULL,
+  CHECK ((data->>'startAt')::bigint < (data->>'endAt')::bigint),CHECK (data->>'status' IN ('active','released')));
+CREATE INDEX IF NOT EXISTS room_blocks_room ON room_blocks(room_id,(data->>'status'));
+CREATE TABLE IF NOT EXISTS notifications (id text PRIMARY KEY,user_id text NOT NULL REFERENCES users(id),data jsonb NOT NULL);
+CREATE INDEX IF NOT EXISTS notifications_owner ON notifications(user_id);
+REVOKE ALL ON room_blocks,notifications FROM PUBLIC;
+ALTER TABLE room_blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON app_lock, users, rooms, admin_grants, identity_reviews, reservations, idempotency, audit_logs, feedback, sessions FROM PUBLIC;
 -- 无客户端 RLS policy，客户端角色即使被平台授予表权限也不能读写。
 -- 服务端须使用表所有者或获授权的 BYPASSRLS 角色。

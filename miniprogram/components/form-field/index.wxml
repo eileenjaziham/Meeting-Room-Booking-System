@@ -1,0 +1,9 @@
+<view class="field" id="field-{{name}}"><label class="field-label" for="{{name}}">{{label}}<text wx:if="{{required}}" class="required"> *</text></label>
+ <view class="control {{focused ? 'is-focused' : ''}} {{error ? 'is-error' : ''}} {{disabled ? 'is-disabled' : ''}} {{stepper ? 'stepper' : ''}}">
+  <view wx:if="{{stepper}}" class="step-button {{disabled || value <= 1 ? 'step-disabled' : ''}}" role="button" data-delta="-1" bindtap="step" aria-disabled="{{disabled || value <= 1}}" aria-label="减少一人" hover-class="{{disabled || value <= 1 ? 'none' : 'step-pressed'}}"><image class="step-icon" src="/assets/icons/minus.svg" mode="aspectFit" aria-hidden="true" /></view>
+  <textarea wx:if="{{multiline}}" id="{{name}}" class="field-input field-textarea" value="{{value}}" placeholder="{{placeholder}}" placeholder-class="field-placeholder" disabled="{{disabled}}" focus="{{focus}}" maxlength="{{maxlength}}" auto-height="{{true}}" cursor-spacing="24" bindinput="input" bindfocus="onFocus" bindblur="onBlur" aria-label="{{label}}" />
+  <input wx:else id="{{name}}" class="field-input" value="{{value}}" type="{{type}}" placeholder="{{placeholder}}" placeholder-class="field-placeholder" disabled="{{disabled}}" focus="{{focus}}" maxlength="{{maxlength}}" cursor-spacing="24" confirm-type="next" bindinput="input" bindfocus="onFocus" bindblur="onBlur" aria-label="{{label}}" />
+  <view wx:if="{{stepper}}" class="step-button {{disabled || (max && value >= max) ? 'step-disabled' : ''}}" role="button" data-delta="1" bindtap="step" aria-disabled="{{disabled || (max && value >= max)}}" aria-label="增加一人" hover-class="{{disabled || (max && value >= max) ? 'none' : 'step-pressed'}}"><image class="step-icon" src="/assets/icons/plus.svg" mode="aspectFit" aria-hidden="true" /></view>
+ </view>
+ <view wx:if="{{error}}" class="field-error" role="alert">{{error}}</view><view wx:elif="{{helper}}" class="field-helper">{{helper}}</view>
+</view>
