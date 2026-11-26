@@ -1,0 +1,12 @@
+<mode-banner />
+<view class="page account-page">
+ <view class="title">选择登录账号</view><view class="muted account-intro">一站式平台暂未接入，当前使用现有演示账号。</view>
+ <view wx:if="{{error}}" class="error">{{error}}</view>
+ <view wx:if="{{local}}" class="account-list">
+  <button wx:for="{{accounts}}" wx:key="id" class="account-option" data-account="{{item.id}}" bindtap="login" disabled="{{busy}}" hover-class="account-pressed" aria-label="{{item.label}}，{{item.type}}">
+   <view class="account-icon {{item.tone}}"><image src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" aria-hidden="true" /></view><view class="account-copy"><view class="account-name">{{item.label}}</view><view class="account-description">{{item.type}}</view></view><view wx:if="{{busy && selectedAccount === item.id}}" class="account-progress">登录中</view><image wx:else class="account-arrow" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" />
+  </button>
+ </view>
+ <view wx:else class="card"><view class="muted cloud-note">当前为云端环境，使用微信会话登录。</view><button class="primary cloud-login" bindtap="login" disabled="{{busy}}" loading="{{busy}}">微信登录</button></view>
+ <view class="muted account-footnote">演示账号仅用于项目测试，不代表学校真实身份认证。</view>
+</view>

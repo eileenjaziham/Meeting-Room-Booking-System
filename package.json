@@ -7,7 +7,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "node --env-file-if-exists=.env server/local.js",
+    "start": "node --env-file-if-exists=.env scripts/start-dev.js",
+    "start:lan": "node --env-file-if-exists=.env --env-file-if-exists=.env.lan scripts/start-dev.js --lan",
     "smoke": "node scripts/smoke.js",
     "version:sync": "node scripts/sync-version.js",
     "test": "node --test --test-concurrency=1 tests/*.test.js",

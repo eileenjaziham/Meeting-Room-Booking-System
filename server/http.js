@@ -2,13 +2,15 @@
 const http = require('node:http');
 const { demoUsers } = require('./seed');
 const { BusinessError } = require('./service');
-function createHttpServer(service, { devLogin = false, driver = 'unknown', logger = console } = {}) {
+const { clientAddress } = require('./dev-network');
+function createHttpServer(service, { devLogin = false, driver = 'unknown', logger = console,allowedClients } = {}) {
   const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     const send = (status, body) => { res.writeHead(status); res.end(JSON.stringify(body)); };
     try {
+      if(allowedClients&&!allowedClients.includes(clientAddress(req.socket.remoteAddress)))throw new BusinessError('FORBIDDEN','此设备未加入局域网调试允许列表',403);
       if (req.method === 'GET' && req.url === '/health') return send(200, { ok: true, mode: 'local-development', database: driver, devLogin });
       if (req.method !== 'POST' || !['/api','/dev/login'].includes(req.url)) throw new BusinessError('NOT_FOUND', '接口不存在', 404);
       const chunks = []; let bytes = 0;

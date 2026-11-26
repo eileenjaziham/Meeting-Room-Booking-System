@@ -8,5 +8,4 @@
   <view class="time-cell"><text class="field-label">结束时间</text><picker mode="multiSelector" range="{{endWheel.range}}" value="{{endWheel.value}}" data-field="end" bindcolumnchange="column" bindchange="time" bindcancel="cancel" disabled="{{disabled}}" aria-label="分别滚动小时和分钟，选择同一空闲区间的结束时间"><view class="time-control {{disabled ? 'disabled' : ''}}"><image class="control-icon" src="/assets/icons/clock.svg" mode="aspectFit" aria-hidden="true" /><text class="time-value">{{end}}</text><image class="chevron" src="/assets/icons/chevron.svg" mode="aspectFit" aria-hidden="true" /></view></picker></view>
  </view>
  <view wx:else class="no-time">当日已无可预约时间，请选择其他日期。</view>
- <view class="helper">小时、分钟分别滚动；分钟每5分钟一档，仅显示空闲时间，结束时间不能跨过已预约时段。</view>
 </view>

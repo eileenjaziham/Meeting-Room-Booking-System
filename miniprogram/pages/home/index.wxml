@@ -1,4 +1,4 @@
-<image class="campus" src="/assets/campus.png" mode="widthFix" aria-label="华中师范大学校徽、校名与校园建筑背景" />
+<image class="campus" src="/assets/campus-hd.png" mode="widthFix" aria-label="华中师范大学校徽、校名与校园建筑背景" />
 <view style="height:{{statusHeight}}px"></view><view class="hero"></view>
 <view class="home-content">
   <view wx:if="{{user.isAdmin}}" class="quick-links admin-quick-links"><quick-entry label="学生预约审核" icon="/assets/icons/calendar.svg" badge="{{adminStats.reservations > 0}}" bind:select="reviewBookings" /><quick-entry label="预约台账" icon="/assets/icons/notices.svg" tone="amber" bind:select="ledger" /><quick-entry label="会议室管理" icon="/assets/icons/admin.svg" tone="green" bind:select="manageRooms" /></view>

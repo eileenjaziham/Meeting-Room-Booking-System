@@ -18,7 +18,7 @@ test('原生 Page 事件连接真实接口：学生提交、管理员批准、�
  const api=require('../miniprogram/utils/api');
  function choose(room,field,time){const index=room.data[field+'Options'].indexOf(time);assert.ok(index>=0,'可选择 '+time);room.changeTime({currentTarget:{dataset:{field}},detail:{value:index}});}
  try{
-  const login=page('login');await login.login({currentTarget:{dataset:{account:'demo-student'}}});assert.equal(app.globalData.user.identityType,'student');
+  const login=page('login');login.onLoad({});login.login();assert.match(navigation.at(-1),/^\/pages\/account-select\/index\?redirect=/);const accounts=page('account-select');accounts.onLoad({redirect:encodeURIComponent('/pages/home/index')});await accounts.login({currentTarget:{dataset:{account:'demo-student'}}});assert.equal(app.globalData.user.identityType,'student');
   const profile=page('profile');await profile.load();assert.equal(profile.data.version,require('../package.json').version);profile.personalInfo();assert.equal(navigation.at(-1),'/pages/personal-info/index');profile.feedback();assert.equal(navigation.at(-1),'/pages/feedback/index');
   const info=page('personal-info');await info.load();assert.equal(info.data.profile.studentNo,'DEMO-S001');assert.equal(info.data.profile.phone,'13800000001');assert.equal(info.data.statusText,'已通过核验');
   await profile.chooseAvatar({detail:{avatarUrl:'temporary-avatar.png'}});assert.match(profile.data.user.avatarUrl,/^data:image\/png;base64,/);assert.equal(profile.data.avatarBusy,false);assert.equal(profile.data.user.name,'测试学生甲');assert.equal(app.globalData.user.avatarUrl,profile.data.user.avatarUrl);

@@ -5,7 +5,7 @@ function requireLogin() {
   clearSession();
   const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
   const page = pages[pages.length - 1];
-  if (page && page.route === 'pages/login/index') return;
+  if (page && ['pages/login/index','pages/account-select/index'].includes(page.route)) return;
   if (authRedirecting) return;
   authRedirecting = true;
   const query = Object.keys(page && page.options || {}).map(key=>encodeURIComponent(key)+'='+encodeURIComponent(page.options[key])).join('&');
