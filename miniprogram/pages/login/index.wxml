@@ -1,9 +1,19 @@
-<mode-banner />
 <view class="login-screen">
- <image class="login-background" src="/assets/campus-hd.png" mode="widthFix" aria-label="华中师范大学校徽、校名与校园背景" />
- <view class="login-content">
-  <view class="login-title">计算机学院预约系统</view><view class="login-subtitle">一站式登录</view>
-  <view class="login-actions"><view wx:if="{{error}}" class="error">{{error}}</view><button class="primary login-submit" bindtap="login" disabled="{{opening}}" loading="{{opening}}">进入统一身份认证</button></view>
-  <view class="login-info"><view class="login-info-title">说明</view><view>本系统仅供华中师范大学计算机学院师生使用。</view><view class="login-info-detail">一站式平台暂未接入，点击登录后选择现有演示账号。</view></view>
- </view>
+  <image class="login-background" src="/assets/login-background.jpeg" mode="aspectFill" aria-label="校园建筑背景" />
+  <view class="login-scrim" aria-hidden="true"></view>
+  <view class="login-content">
+    <view class="brand-lockup"><view class="brand-mark" aria-hidden="true">CCNU</view><view class="brand-kicker">计算机学院 · 会议室预约</view></view>
+    <view class="login-card">
+      <view class="login-heading">欢迎登录</view>
+      <view class="login-subtitle">使用已核验账号登录会议室预约系统</view>
+      <view wx:if="{{error}}" class="form-error form-error-summary" role="alert">{{error}}</view>
+      <form bindsubmit="submit" report-submit="true">
+        <label class="field"><text class="label">账号</text><view class="input-shell {{accountError ? 'input-invalid' : ''}}"><input name="account" value="{{account}}" data-field="account" bindinput="field" bindblur="blur" type="text" maxlength="50" placeholder="请输入账号" placeholder-class="input-placeholder" confirm-type="next" cursor-spacing="24" /></view><text wx:if="{{accountError}}" class="field-error">{{accountError}}</text></label>
+        <label class="field field-password"><text class="label">密码</text><view class="input-shell {{passwordError ? 'input-invalid' : ''}}"><input name="password" value="{{password}}" data-field="password" bindinput="field" bindblur="blur" type="text" password maxlength="50" placeholder="请输入密码" placeholder-class="input-placeholder" confirm-type="done" cursor-spacing="24" /></view><text wx:if="{{passwordError}}" class="field-error">{{passwordError}}</text></label>
+        <button class="login-submit" formType="submit" loading="{{submitting}}" disabled="{{submitting}}">登录</button>
+      </form>
+      <view class="login-note"><view class="note-dot" aria-hidden="true"></view><text>已通过身份核验的学生、教师和负责人可直接登录</text></view>
+    </view>
+    <view class="login-footer">仅限华中师范大学计算机学院师生使用</view>
+  </view>
 </view>

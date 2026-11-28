@@ -1,6 +1,6 @@
-<mode-banner />
 <view class="page manage-page">
- <view class="title">会议室管理</view><view class="muted intro">选择会议室，安排停用或解除停用。</view>
+ <view class="title">会议室管理</view><view class="muted intro">维护会议室资料，安排停用或解除停用。</view>
+ <button class="primary action-button" bindtap="newRoom" disabled="{{busy}}">新增会议室</button>
  <feedback-state wx:if="{{loading}}" kind="loading" title="正在读取会议室" />
  <view wx:if="{{rooms.length}}" class="card room-picker">
   <view class="section-heading"><text class="subtitle">选择会议室</text><text class="muted">共 {{rooms.length}} 间</text></view>
@@ -8,10 +8,37 @@
    <view class="room-number">{{item.number}}</view><view class="room-info"><view class="room-capacity">容纳 {{item.capacity}} 人</view><view class="room-equipment">{{item.equipment}}</view></view><view class="room-state {{item.blockCount ? 'scheduled' : ''}}">{{item.blockCount ? item.blockCount + ' 项停用' : '正常开放'}}</view><image class="room-arrow" src="{{selected.id === item.id ? '/assets/icons/check.svg' : '/assets/icons/chevron.svg'}}" mode="aspectFit" aria-hidden="true" />
   </view></view>
  </view>
+ <view wx:if="{{editing}}" id="room-editor" class="card room-editor">
+  <view class="section-heading"><text class="subtitle">{{form.id ? '编辑会议室' : '新增会议室'}}</text><text class="muted">核心资料</text></view>
+  <form-field name="id" label="会议室编号" value="{{form.id}}" required="{{true}}" maxlength="50" disabled="{{isEdit || busy}}" placeholder="例如 7060" helper="{{isEdit ? '编号创建后不可修改' : '系统内唯一，如房间号 7060'}}" bind:change="roomField" />
+  <form-field name="number" label="会议室名称" value="{{form.number}}" maxlength="50" disabled="{{busy}}" placeholder="留空则与编号相同" helper="显示在列表和日程中的名称" bind:change="roomField" />
+  <form-field name="capacity" label="容量" value="{{form.capacity}}" type="number" required="{{true}}" maxlength="5" disabled="{{busy}}" placeholder="例如 10" bind:change="roomField" />
+  <form-field name="location" label="位置" value="{{form.location}}" required="{{true}}" maxlength="200" disabled="{{busy}}" placeholder="例如 南湖校区综合楼七楼" bind:change="roomField" />
+  <form-field name="equipment" label="设备" value="{{form.equipment}}" required="{{true}}" maxlength="200" disabled="{{busy}}" placeholder="例如 屏幕、投影" bind:change="roomField" />
+  <form-field name="open" label="开放时间" value="{{form.open}}" required="{{true}}" maxlength="50" disabled="{{busy}}" placeholder="例如 08:00—22:00" bind:change="roomField" />
+  <view class="photo-field">
+   <text class="label">会议室图片</text>
+   <view wx:if="{{form.photo}}" class="photo-thumb"><image src="{{form.photo}}" mode="aspectFill" aria-label="{{form.photoNote || '会议室图片预览'}}" /><view class="photo-remove" role="button" aria-label="移除图片" bindtap="removePhoto" hover-class="tap-pressed">×</view></view>
+   <view wx:else class="photo-empty" role="button" hover-class="photo-empty-pressed" aria-label="从相册或相机选择本地图片" bindtap="choosePhoto">
+    <image class="photo-empty-icon" src="/assets/icons/plus.svg" mode="aspectFit" aria-hidden="true" />
+    <text class="photo-empty-text">{{photoBusy ? '正在处理图片…' : '选择本地图片'}}</text>
+    <text class="photo-empty-hint">从相册或相机选取 JPG / PNG，自动压缩</text>
+   </view>
+   <view wx:if="{{form.photo}}" class="photo-actions"><button class="secondary" bindtap="choosePhoto" disabled="{{busy || photoBusy}}" loading="{{photoBusy}}">重新选择</button></view>
+  </view>
+  <form-field name="photoNote" label="图片说明" value="{{form.photoNote}}" maxlength="200" disabled="{{busy}}" placeholder="可选" bind:change="roomField" />
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="editor-actions"><button class="primary" bindtap="saveRoom" disabled="{{busy}}" loading="{{busy}}">保存资料</button><button class="secondary" bindtap="cancelEdit" disabled="{{busy}}">取消</button></view>
+ </view>
  <view id="manage-form"></view>
  <block wx:if="{{selected}}">
   <view class="card block-form">
-   <view class="section-heading"><text class="subtitle">安排停用</text><text class="selected-room">{{selected.number}} 会议室</text></view><view class="muted room-location">{{selected.location}} · 固定容量 {{selected.capacity}} 人</view>
+   <view class="section-heading"><text class="subtitle">安排停用</text><view class="room-summary-actions"><view class="mini-btn {{busy ? 'is-disabled' : ''}}" role="button" aria-label="编辑 {{selected.number}} 会议室资料" hover-class="mini-btn-pressed" bindtap="editRoom">编辑资料</view><view class="mini-btn danger-outline {{busy ? 'is-disabled' : ''}}" role="button" aria-label="删除 {{selected.number}} 会议室" hover-class="mini-btn-pressed" bindtap="deleteRoom">删除</view></view></view>
+   <view class="room-summary">
+    <text class="selected-room">{{selected.number}} 会议室</text>
+    <text class="state-chip {{selected.blockCount ? 'is-scheduled' : ''}}">{{selected.blockCount ? selected.blockCount + ' 项停用中' : '正常开放'}}</text>
+    <text class="muted room-location">{{selected.location}} · 固定容量 {{selected.capacity}} 人</text>
+   </view>
    <view class="date-fields">
     <view class="manage-field"><text class="label">开始日期</text><picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{startDateIndex}}" data-field="startDate" bindchange="changeDate" disabled="{{busy}}" aria-label="选择停用开始日期"><view class="manage-control"><image class="control-icon" src="/assets/icons/calendar.svg" mode="aspectFit" /><text class="control-value">{{startDateLabel}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>
     <view class="manage-field"><text class="label">结束日期</text><picker mode="selector" range="{{dateOptions}}" range-key="label" value="{{endDateIndex}}" data-field="endDate" bindchange="changeDate" disabled="{{busy}}" aria-label="选择停用结束日期"><view class="manage-control"><image class="control-icon" src="/assets/icons/calendar.svg" mode="aspectFit" /><text class="control-value">{{endDateLabel}}</text><image class="control-chevron" src="/assets/icons/chevron.svg" mode="aspectFit" /></view></picker></view>

@@ -2,15 +2,15 @@
 .profile-header,.menu-card{border:1rpx solid var(--ui-border);border-radius:24rpx;box-shadow:0 4rpx 18rpx rgba(42,75,113,.035);margin-bottom:24rpx}
 .profile-header{display:flex;align-items:center;padding:30rpx 26rpx;background:#fff}
 .avatar-shell{position:relative;width:112rpx;height:112rpx;min-width:112rpx;flex:0 0 112rpx;margin-right:26rpx}
-.avatar-button,.avatar-placeholder{position:absolute;left:0;top:0;width:112rpx;height:112rpx;min-width:0;max-width:112rpx;min-height:112rpx;margin:0;padding:0;line-height:normal;font-size:0;border:4rpx solid #fff;border-radius:50%;background:var(--ui-primary-soft);box-shadow:0 0 0 1rpx #e1ebfa;display:flex;align-items:center;justify-content:center;overflow:visible}
+.avatar-button,.avatar-placeholder{position:absolute;left:0;top:0;width:112rpx;height:112rpx;min-width:0;max-width:112rpx;min-height:112rpx;margin:0;padding:0;line-height:normal;font-size:0;border:4rpx solid #fff;border-radius:50%;background:var(--ui-primary-soft);box-shadow:0 0 0 1rpx #d7e6e8;display:flex;align-items:center;justify-content:center;overflow:visible}
 .avatar-image{display:block;width:62rpx;height:62rpx;border-radius:50%}
 .avatar-image.custom-avatar{width:104rpx;height:104rpx}
 .avatar-camera{position:absolute;right:-3rpx;bottom:-1rpx;width:34rpx;height:34rpx;display:flex;align-items:center;justify-content:center;background:var(--ui-primary);border:3rpx solid #fff;border-radius:50%}
 .camera-image{width:21rpx;height:21rpx;display:block}
 .profile-heading{flex:1;min-width:0}
-.profile-name{font-size:34rpx;font-weight:600;line-height:1.4;color:#263750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-name{font-size:34rpx;font-weight:600;line-height:1.4;color:#24364b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile-badges{display:flex;align-items:center;flex-wrap:wrap;gap:8rpx;margin-top:10rpx}
-.identity-tag{display:inline-block;font-size:21rpx;line-height:32rpx;padding:0 12rpx;color:#5279b5;background:var(--ui-primary-soft);border-radius:8rpx;white-space:nowrap}
+.identity-tag{display:inline-block;font-size:21rpx;line-height:32rpx;padding:0 12rpx;color:#407785;background:var(--ui-primary-soft);border-radius:8rpx;white-space:nowrap}
 .avatar-note{margin-top:12rpx;font-size:21rpx;color:var(--ui-text-muted);line-height:1.5}
 .profile-login{display:block;color:var(--ui-primary);font-size:25rpx;margin-top:12rpx}
 .menu-card{padding:0 26rpx;background:#fff;overflow:hidden}

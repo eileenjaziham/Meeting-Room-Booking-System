@@ -1,4 +1,3 @@
-<mode-banner />
 <view class="page account-page">
  <view class="title">选择登录账号</view><view class="muted account-intro">一站式平台暂未接入，当前使用现有演示账号。</view>
  <view wx:if="{{error}}" class="error">{{error}}</view>

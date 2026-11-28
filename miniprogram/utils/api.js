@@ -30,8 +30,8 @@ async function call(action, payload = {}) {
     return result.data;
   } catch (e) { if (e.code === 'UNAUTHENTICATED') requireLogin(); throw e; }
 }
-async function login(account) {
-  if (config.mode === 'local') { const data = await http('/dev/login', { account }); wx.setStorageSync('token', data.token); }
+async function login(account, password) {
+  if (config.mode === 'local') { const payload = { account }; if (password !== undefined) payload.password = password; const data = await http('/dev/login', payload); wx.setStorageSync('token', data.token); }
   const result = await call('me'); authRedirecting = false; getApp().globalData.user = result.user; return result;
 }
 async function me() { const data = await call('me'); getApp().globalData.user = data.user; return data; }

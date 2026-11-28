@@ -1,4 +1,3 @@
-<mode-banner />
 <view class="page profile-page">
   <view class="card profile-header">
     <view class="avatar-shell">
