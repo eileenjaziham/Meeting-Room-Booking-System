@@ -17,17 +17,17 @@
 | sessions | 本地令牌SHA256哈希、user_id外键和有效期，启用RLS；不存原始令牌 |
 | app_lock | 固定 id=1，数据库级并发互斥行 |
 
-JSONB 便于五周课程演示保存资料和预约快照；用户/房间关系、唯一性、预约状态及基本数据合法性仍有 SQL 约束。业务层只更新变化记录，不清空表或重写整个数据库。所有业务表启用 RLS，无客户端策略，并撤销 PUBLIC 权限。服务端使用表所有者或已授权 BYPASSRLS 角色。
+JSON 便于五周课程演示保存资料和预约快照；用户/房间关系、唯一性、预约状态及基本数据合法性仍有 SQL 约束。MySQL 表结构在 `server/schema.mysql.sql`，本地一条命令初始化为 `npm run db:init`（按 `.env` 建库 → 建表 → 写入 `server/seed.js` 的会议室与账号），纯 SQL 版本 `database/mysql-init.sql` 由 `npm run db:sql` 从同两份文件生成，二者不会漂移；迁库仍用 `scripts/migrate-pglite-to-mysql.js`。业务层只更新变化记录，不清空表或重写整个数据库。
 
 ## 一次预约事务
 
-1. `BEGIN ISOLATION LEVEL READ COMMITTED`。
+1. MySQL 使用 `START TRANSACTION`，PostgreSQL/PGlite 使用 `BEGIN ISOLATION LEVEL READ COMMITTED`。
 2. `SELECT id FROM app_lock WHERE id=1 FOR UPDATE`，跨云函数实例也锁同一数据库行。
 3. 获取锁后读取最新业务状态，按服务端当前时间计算失效/完成，检查请求幂等摘要。
 4. 校验已核验身份、房间、字段、容量、北京时间及冲突；冲突判据 `new.start < old.end && new.end > old.start`。
 5. 在同一事务写预约、幂等映射和最低限度操作日志，再 `COMMIT`；任何错误 `ROLLBACK`。
 
-取消、预约审批、身份审批也走同一锁，因此不能与创建交错形成不一致。教师不能覆盖学生已待确认时段。PGlite 只有一条连接，外层队列防止 BEGIN 交错；云端正确性来自 PostgreSQL 行锁，不能用进程内队列代替。所有业务写入必须走此事务入口，数据库控制台人工写入须停业务并复核一致性。
+取消、预约审批、身份审批也走同一锁，因此不能与创建交错形成不一致。教师不能覆盖学生已待确认时段。MySQL、PostgreSQL 使用数据库行锁，PGlite 只有一条连接并由外层队列防止 BEGIN 交错。所有业务写入必须走此事务入口，数据库控制台人工写入须停业务并复核一致性。
 
 代价是查询和所有房间操作也串行、全量读取历史。适合五房间课程验证，**没有生产吞吐承诺**。正式数据量增长应改为按房间/日期锁、数据库函数/范围约束、分页与限流，不在本项目中引入微服务。
 

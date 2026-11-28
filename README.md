@@ -1,21 +1,41 @@
 # 华中师范大学计算机学院会议室预约
 
-原生微信小程序 + Node.js + PostgreSQL 的课程项目。首页沿用提供的 Pixso 校园背景、三快捷入口、日历、蓝白圆角卡片、红绿占用条及首页/我的导航。**当前可运行的是本地课程开发环境，使用虚构测试身份；尚未部署 CloudBase 或接入学校 SSO。**
+原生微信小程序 + Node.js + MySQL 的课程项目。首页沿用提供的 Pixso 校园背景、三快捷入口、日历、蓝白圆角卡片、红绿占用条及首页/我的导航。**当前可运行的是本地课程开发环境，使用虚构测试身份；尚未部署 CloudBase 或接入学校 SSO。**
 
 2026-11-23规则更新：五间房容量和设备以Pixso为准（7060/7081/7091：10人、屏幕；7052：40人、屏幕；7119：100人、投影/音响/话筒）。**含今天在内可预约7天**，服务器按北京时间校验；超出范围请电话联系曹闯老师申请，页面按要求只展示QQ：28061535。预约日期自动显示星期，无需选择年份。详见[最新业务变更](docs/decisions-2026-11-23.md)。
 
 ## 快速运行
 
-需要 Node.js 22 或更高版本。Windows PowerShell 中若 npm 脚本执行受限，使用 `npm.cmd`。
+需要 Node.js 22 或更高版本、MySQL 8.0.16 及以上。Windows PowerShell 中若 npm 脚本执行受限，使用 `npm.cmd`。
 
 ```powershell
 npm.cmd ci
+copy .env.example .env
+npm.cmd run db:init
 npm.cmd start
 ```
 
-默认启动 `http://127.0.0.1:3000`。首次启动自动初始化五间会议室及五个测试账号，数据保存在 `data/local/`，重启保留。数据库是 PGlite（嵌入式真实 PostgreSQL 引擎），不是前端静态数组或内存假后端。测试身份不代表真实学院认证。
+`db:init` 一条命令完成建库、建表、写入初始数据，并打印摘要：
 
-在微信开发者工具选择“导入项目”，目录选择本 README 所在目录，读取 `project.config.json`。当前工程已使用开发者工具内置测试号；新环境可在导入界面点击“测试号”，选择“不使用云服务”，或换成自己的小程序 AppID。Stable2.02.2609250已验证可以打开本工程、使用本地测试学生登录并加载会议室列表。确认 `miniprogramRoot=miniprogram/`，`miniprogram/config.js` 默认 `local`。首次“信任并运行”提示由用户本人确认。首页点击“进入登录”选择测试身份。
+```
+数据库初始化完成
+  驱动      mysql（MySQL 8.4.13）
+  目标库    meeting_room_booking @ localhost:3306（新建）
+  会议室    5 间：7052 40人 · 7060 10人 · 7081 10人 · 7091 10人 · 7119 100人
+  账号      5 个：负责人 1、学生 2、教师 1、未核验 1
+  负责人    demo-admin
+```
+
+- 目标库取 `.env` 的 `MYSQL_DATABASE`（用 `MYSQL_URL` 时取连接串里的库名），库不存在会自动创建，字符集固定 utf8mb4；
+- **可重复执行**：只补缺失的表和初始数据，不删除已有房间、账号或预约；
+- 初始数据分三块：会议室（`rooms`）、账号与角色（`users` 的师生类型 + 核验状态）、负责人授权（`admin_grants`），全部来自 `server/seed.js`；
+- 演示账号受 `ENABLE_DEV_LOGIN=true` 控制：`npm.cmd run db:init -- --demo` 强制写入、`-- --no-demo` 只建库建表不写账号（云环境用）。
+
+不想用 Node 脚本时，也可直接执行纯 SQL：`mysql -uroot -p --default-character-set=utf8mb4 < database/mysql-init.sql`。该文件由 `npm.cmd run db:sql` 依据 `server/schema.mysql.sql` 和 `server/seed.js` 生成，两条路径写入的数据完全一致，`npm test` 会校验它没有被单独改过。
+
+默认启动 `http://127.0.0.1:3000`，连接参数在 `.env` 中修改（`MYSQL_PASSWORD` 必须与本地 root 密码一致）。测试身份不代表真实学院认证。
+
+在微信开发者工具选择“导入项目”，目录选择本 README 所在目录，读取 `project.config.json`。当前工程已使用开发者工具内置测试号；新环境可在导入界面点击“测试号”，选择“不使用云服务”，或换成自己的小程序 AppID。确认 `miniprogramRoot=miniprogram/`，`miniprogram/config.js` 默认 `local`。首次“信任并运行”提示由用户本人确认。首页点击“进入登录”，在登录页填写账号和密码。
 
 **默认本地回环接口只供开发者工具模拟器联调，手机不能访问电脑的127.0.0.1。** 同一热点/Wi-Fi下临时真机演示可使用下述独立局域网模式；正式使用按后文部署云环境。
 
@@ -35,22 +55,25 @@ npm.cmd run start:lan
 
 ## 演示闭环
 
-1. 在启动页点击“进入统一身份认证”，进入演示账号选择页后选择“测试学生甲”；选未来7天内日期、7081 房间、14:30—17:50，填写用途、人数（≤10）、电话后提交，结果为“申请已提交，等待管理员审核”。
-2. “我的 → 切换登录账号 → 测试教师”，同房重叠区间应冲突；相邻的 17:50—18:20 可提交并直接成功。
-3. 切到“测试负责人”，进入“管理工作台 → 学生预约审批”，批准或填写拒绝原因后拒绝。拒绝、取消、失效释放时段。
+1. 在启动页点击“进入登录”，使用 `demo-student / student123` 登录；选未来7天内日期、7081 房间、14:30—17:50，填写用途、人数（≤10）、电话后提交，结果为“申请已提交，等待管理员审核”。
+2. “我的 → 切换账号”返回登录页，使用 `demo-teacher / teacher123` 登录；同房重叠区间应冲突，相邻的 17:50—18:20 可提交并直接成功。
+3. 使用 `demo-admin / admin123` 登录，进入“管理工作台 → 学生预约审批”，批准或填写拒绝原因后拒绝。拒绝、取消、失效释放时段。
 4. 回到学生账号，在“我的预约”查看最新状态；须至少提前5小时才可二次确认取消，恰好5小时可取消，不足5小时联系管理员。成功后结果页和详情页显示会议室密码。
-5. “未核验测试用户”先提交虚构姓名、学工号、师生类型和手机号；未通过前不可查日程。负责人在用户身份审核中处理，通过后才获得对应师生权限。
+5. 业务需要身份核验时，使用“身份信息”页面提交虚构姓名、学工号、师生类型和手机号；未通过前不可查日程。负责人在用户身份审核中处理，通过后才获得对应师生权限。
 
-启动页为原型的一站式登录入口，当前未接入学校平台；点击后进入独立账号选择页，再调用原有测试登录接口，不采集校园账号或密码。登录过期后经过这两页仍能恢复原预约路径与已填写资料。预约表单必填“负责老师、借用人”，姓名会在本人详情和管理员台账显示。七日范围包含当天：例如22号可预约至28号，29号不可。有效本地会话的令牌哈希已保存到数据库，后端重启后继续有效。
+启动页直接提供账号密码登录，当前未接入学校平台，不采集校园账号或密码。登录过期后仍能恢复原预约路径与已填写资料。预约表单必填“负责老师、借用人”，姓名会在本人详情和管理员台账显示。七日范围包含当天：例如22号可预约至28号，29号不可。有效本地会话的令牌哈希已保存到数据库，后端重启后继续有效。
 
 管理员可在台账的预约详情填写原因并取消他人有效预约，不受提前5小时限制；用户收到取消原因的站内通知。会议室密码为编号加1234#（如70811234#），仅成功状态展示，学生须审核通过。详见[取消与密码规则](docs/cancellation-and-access.md)，小程序预约须知已同步。
 
-| 测试账号 | 身份 | 独立管理员授权 |
-|---|---|---|
-| demo-student / demo-student2 | 已核验学生 | 无 |
-| demo-teacher | 已核验教师 | 无 |
-| demo-admin | 已核验学生 | 有；自身预约仍待确认 |
-| demo-guest | 未提交身份 | 无 |
+| 账号 | 密码 | 身份 | 独立管理员授权 |
+|---|---|---|---|
+| demo-student | student123 | 已核验学生（测试学生甲） | 无 |
+| demo-student2 | student123 | 已核验学生（测试学生乙） | 无 |
+| demo-teacher | teacher123 | 已核验教师 | 无 |
+| demo-admin | admin123 | 已核验学生，仅负责人权限 | 有；自身预约仍待确认 |
+| demo-guest | guest123 | 未提交身份 | 无 |
+
+小程序登录页不再展示这批账号，账号密码以本表为准。需要改密码或加账号，改 `server/seed.js` 里的 `demoUsers` 后重新执行 `npm.cmd run db:init`（会覆盖回种子值），再执行 `npm.cmd run db:sql` 同步 SQL 初始化文件。
 
 手机号 `13800000001` 等仅是虚构格式样本，不会发送短信，也不视为验证真实手机号。
 
@@ -65,9 +88,19 @@ npm.cmd run test:postgres
 
 `test` 使用隔离内存 PostgreSQL 测试库，覆盖业务/权限/HTTP、原生 Page 事件对真实接口、WCC 时间条模板渲染。`check` 检查结构、JS/JSON、云函数副本一致性，并运行 WCC/WCSC 编译。`test:postgres` 需要 `TEST_DATABASE_URL` 指向**专用测试库**，未配置会明确跳过；它验证两个独立连接池的数据库行锁，不以 PGlite 单连接测试冒充跨实例验证。结果与未验证项见 [测试报告](docs/test-report.md)。
 
-## 可选外部 PostgreSQL
+## 数据库配置
 
-复制 `.env.example` 为 `.env`，设置 `DB_DRIVER=pg` 和服务端 `DATABASE_URL` 后执行 `npm run db:init`。若仅本地演示需要测试用户，显式设置 `ENABLE_DEV_LOGIN=true`。云环境始终为 `false`。
+复制 `.env.example` 为 `.env`，设置 `DB_DRIVER=mysql` 及 `MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE`，然后在项目根目录执行 `npm.cmd run db:init`。也可以设置 `MYSQL_URL` 使用完整连接地址。若仅本地演示需要测试账号，显式设置 `ENABLE_DEV_LOGIN=true`（`.env.example` 默认已开）。云环境始终为 `false`。
+
+`db:init` 在 MySQL 下会先连到服务器（不指定库）建库，再交给 `server/schema.mysql.sql` 建表，因此**空机器上是幂等的一条命令**；本地登录校验的是库里 `users` 表的账号密码，不是代码里的静态列表。需要换成纯 SQL 部署或交给 DBA 审阅时，用 `npm.cmd run db:sql` 重新生成 `database/mysql-init.sql`（库名可在命令后追加，如 `npm.cmd run db:sql mrb_demo`）。
+
+改动 `server/seed.js` 里的会议室或演示账号后，`npm test` 会因 SQL 文件未同步而失败，执行 `npm.cmd run db:sql` 重新生成即可。
+
+如果需要把原 `data/local/` 中的 PGlite 数据保留到 MySQL，先完成上面的初始化，再执行 `npm.cmd run db:migrate:mysql`；源目录可通过 `PGLITE_SOURCE_PATH` 修改。迁移脚本按记录主键合并，不删除 MySQL 中已有数据。
+
+如果此前已经按旧版本 JSON schema 创建过 MySQL 数据库，执行 `npm.cmd run db:normalize:mysql` 将旧表转换为规范化字段；迁移前可设置 `KEEP_MYSQL_JSON_BACKUP=true` 保留旧表备份。
+
+项目仍保留 PGlite 和 PostgreSQL 驱动用于旧测试与云函数兼容；需要切回 PGlite 时把 `DB_DRIVER` 改为 `pglite`，需要 PostgreSQL 时改为 `pg` 并设置 `DATABASE_URL`。
 
 连接安全环境启用 `PG_SSL=true`；私有 CA 放在忽略提交的 `certs/`，设置 `PG_CA_FILE`。项目不使用 `rejectUnauthorized:false`。数据库初始化角色须能建表；运行角色须拥有业务表、能绕过本项目无客户端策略的 RLS（或作为表所有者）。业务表禁止小程序/网页客户端直接读写。
 

@@ -3,7 +3,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const out=path.join(root,'cloudfunctions/api/server');
 fs.mkdirSync(out,{recursive:true});
-for(const file of ['db.js','schema.sql','service.js','seed.js'])fs.copyFileSync(path.join(root,'server',file),path.join(out,file));
+for(const file of ['db.js','schema.sql','schema.mysql.sql','service.js','seed.js'])fs.copyFileSync(path.join(root,'server',file),path.join(out,file));
 const shared = path.join(root, 'cloudfunctions/api/shared');
 fs.mkdirSync(shared, { recursive: true });
 fs.copyFileSync(path.join(root, 'shared/booking-policy.json'), path.join(shared, 'booking-policy.json'));

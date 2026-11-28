@@ -14,12 +14,16 @@
     "test": "node --test --test-concurrency=1 tests/*.test.js",
     "check": "node scripts/check.js && node scripts/compile-mini.js",
     "db:init": "node --env-file-if-exists=.env scripts/db-init.js",
+    "db:sql": "node scripts/db-sql.js",
+    "db:migrate:mysql": "node --env-file-if-exists=.env scripts/migrate-pglite-to-mysql.js",
+    "db:normalize:mysql": "node --env-file-if-exists=.env scripts/normalize-mysql.js",
     "cloud:prepare": "node scripts/prepare-cloud.js",
     "spec:validate": "openspec validate --all --strict",
     "test:postgres": "node --env-file-if-exists=.env --test tests-postgres/*.test.js"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.17",
+    "mysql2": "^3.15.0",
     "pg": "^8.23.1"
   },
   "devDependencies": {

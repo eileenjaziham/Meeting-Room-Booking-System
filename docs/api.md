@@ -25,7 +25,10 @@
 | admin.reviewReservation | id, decision: approve/reject, reason? | 负责人；拒绝原因必填，重复审批为 STATE |
 | admin.identities | status? | 负责人；身份审核列表及资料快照 |
 | admin.reviewIdentity | id, decision, reason? | 负责人；通过后赋经核验师生身份，拒绝原因必填 |
-| admin.rooms | 无 | 五间房间固定资料、停用/解除记录、操作者 |
+| admin.rooms | 无 | 授权负责人；会议室资料、停用/解除记录、操作者 |
+| admin.roomCreate | id, number, capacity, location, equipment, open?, photo?, photoNote? | 授权负责人；新增会议室，编号和名称不能重复，容量为1—10000的整数；photo 可为内置路径（≤500字）或小程序选择本地图片后提交的 data:image/(png\|jpeg\|webp);base64 数据地址（解码后≤600KB） |
+| admin.roomUpdate | roomId, number, capacity, location, equipment, open?, photo?, photoNote? | 授权负责人；修改会议室资料，容量不能小于已有有效预约人数 |
+| admin.roomDelete | roomId | 授权负责人；删除无预约和停用历史的会议室 |
 | admin.roomBlockPreview | roomId, startDate, endDate, start, end, reason | 返回受影响有效预约与previewVersion |
 | admin.roomBlockCreate | 上述字段, previewVersion, requestId | 版本变化须重预览；事务创建停用、取消预约、通知与审计 |
 | admin.roomBlockRelease | id, reason | 解除停用；不恢复已取消预约 |

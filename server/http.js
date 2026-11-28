@@ -1,6 +1,5 @@
 'use strict';
 const http = require('node:http');
-const { demoUsers } = require('./seed');
 const { BusinessError } = require('./service');
 const { clientAddress } = require('./dev-network');
 function createHttpServer(service, { devLogin = false, driver = 'unknown', logger = console,allowedClients } = {}) {
@@ -14,15 +13,18 @@ function createHttpServer(service, { devLogin = false, driver = 'unknown', logge
       if (req.method === 'GET' && req.url === '/health') return send(200, { ok: true, mode: 'local-development', database: driver, devLogin });
       if (req.method !== 'POST' || !['/api','/dev/login'].includes(req.url)) throw new BusinessError('NOT_FOUND', '接口不存在', 404);
       const chunks = []; let bytes = 0;
-      for await (const chunk of req) { bytes += chunk.length; if (bytes > 96*1024) throw new BusinessError('PAYLOAD_TOO_LARGE', '请求过大', 413); chunks.push(chunk); }
+      // 会议室图片以 base64 数据地址随请求提交，接口体上限放宽到 4MB；登录等其余体量仍保持 96KB。
+      const limit = req.url === '/api' ? 4 * 1024 * 1024 : 96 * 1024;
+      for await (const chunk of req) { bytes += chunk.length; if (bytes > limit) throw new BusinessError('PAYLOAD_TOO_LARGE', '请求过大', 413); chunks.push(chunk); }
       let body;
       try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { throw new BusinessError('VALIDATION','请求须为 JSON'); }
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new BusinessError('VALIDATION','请求须为 JSON 对象');
       if (req.url === '/dev/login') {
         if (!devLogin) throw new BusinessError('FORBIDDEN', '开发登录已关闭', 403);
-        const user = demoUsers.find(x => x.id === body.account);
-        if (!user) throw new BusinessError('VALIDATION', '测试账号不存在');
-        const token = await service.issueSession(user.id);
+        const account = await service.devAccount(body.account);
+        if (!account) throw new BusinessError('VALIDATION', '测试账号不存在，请先运行 npm run db:init 写入初始数据');
+        if (body.password !== undefined && body.password !== account.password) throw new BusinessError('UNAUTHENTICATED', '账号或密码不正确', 401);
+        const token = await service.issueSession(account.id);
         return send(200, { ok: true, data: { token, mode: '本地开发 · 虚构测试身份', database: driver } });
       }
       const token = (req.headers.authorization || '').replace(/^Bearer /, '');

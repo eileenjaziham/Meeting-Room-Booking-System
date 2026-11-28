@@ -10,5 +10,5 @@ for(const file of files.filter(x=>x.startsWith(mini+path.sep)&&x.endsWith('.js')
 for(const page of app.pages)for(const ext of ['js','json','wxml','wxss'])if(!fs.existsSync(path.join(mini,page+'.'+ext)))throw Error('页面文件缺失：'+page+'.'+ext);
 for(const entry of app.tabBar.list)for(const key of ['iconPath','selectedIconPath'])if(!fs.existsSync(path.join(mini,entry[key])))throw Error('导航图标缺失');
 for(const [name,entry]of Object.entries(app.usingComponents))for(const ext of ['js','json','wxml','wxss'])if(!fs.existsSync(path.join(mini,entry+'.'+ext)))throw Error('组件文件缺失：'+name);
-for(const file of ['db.js','schema.sql','service.js','seed.js'])if(!fs.readFileSync(path.join(root,'server',file)).equals(fs.readFileSync(path.join(root,'cloudfunctions/api/server',file))))throw Error('云函数未同步：'+file+'，请运行 npm run cloud:prepare');
+for(const file of ['db.js','schema.sql','schema.mysql.sql','service.js','seed.js'])if(!fs.readFileSync(path.join(root,'server',file)).equals(fs.readFileSync(path.join(root,'cloudfunctions/api/server',file))))throw Error('云函数未同步：'+file+'，请运行 npm run cloud:prepare');
 console.log('结构检查通过：'+app.pages.length+' 页面、'+Object.keys(app.usingComponents).length+' 组件、'+js+' JS、'+json+' JSON；云函数副本一致。');
